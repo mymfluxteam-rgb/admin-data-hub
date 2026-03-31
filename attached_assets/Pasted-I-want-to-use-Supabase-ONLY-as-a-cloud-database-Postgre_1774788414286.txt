@@ -1,0 +1,62 @@
+I want to use Supabase ONLY as a cloud database (PostgreSQL). NOT for authentication, NOT for RLS, NOT for business logic.
+
+**My requirements:**
+
+1. **Supabase is just a database**
+   - Store users, transactions, hwids, audit_logs
+   - No Supabase Auth (I will use my own JWT)
+   - No RLS policies (I will control access in my backend)
+   - No Supabase realtime
+
+2. **I need a backend server (Express.js)**
+   - This server will handle ALL business logic
+   - This server will connect to Supabase using service_role key
+   - This server will provide APIs for my frontend
+
+3. **Frontend talks to my backend, NOT directly to Supabase**
+   - Frontend → My Backend (port 5000) → Supabase
+   - No direct Supabase calls from frontend
+
+4. **Operations I need from dashboard:**
+   - Add user (create in Supabase users table)
+   - Remove user (delete from Supabase)
+   - Ban/Unban user (update status in Supabase)
+   - Verify user (update verified in Supabase)
+   - Add/Remove credits (update credits, add transaction)
+   - HWID management (blacklist, delete)
+   - View all data (users, transactions, hwids, audit_logs)
+
+5. **What I DON'T want:**
+   - No "No data found" because database is empty (just show empty table)
+   - No Supabase Auth (I want my own JWT system)
+   - No RLS complexity
+   - No frontend direct to Supabase
+
+Please create:
+
+**File 1: Backend Server (server/index.js)**
+- Express.js server on port 5000
+- Connect to Supabase using @supabase/supabase-js (service_role key)
+- JWT authentication for all API endpoints
+- API endpoints for all operations above
+
+**File 2: Frontend API Client (lib/api.ts)**
+- Remove all direct Supabase calls
+- Call my backend API at http://localhost:5000
+- Include JWT token in headers
+
+**File 3: Updated useAuth.ts**
+- Use my backend's /auth/login endpoint
+- Store JWT from my backend (not Supabase token)
+
+**File 4: .env files**
+- Backend: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, JWT_SECRET
+- Frontend: VITE_API_URL=http://localhost:5000
+
+The database tables are already in Supabase:
+- users (id, email, username, status, verified, credits, role, created_at)
+- transactions (id, user_id, amount, type, description, created_at)
+- hwids (id, user_id, device_id, device_name, blacklisted, last_seen)
+- audit_logs (id, action, actor, target, details, ip_address, created_at)
+
+Please provide complete code for the backend server and updated frontend.
