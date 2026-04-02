@@ -9,6 +9,8 @@ import chartDataRouter from "./chartData";
 import registerRouter from "./register";
 import sessionsRouter from "./sessions";
 import externalRouter from "./external";
+import apiKeysRouter from "./apiKeys";
+import apiKeyTemplatesRouter from "./apiKeyTemplates";
 
 const router: IRouter = Router();
 
@@ -22,5 +24,7 @@ router.use("/audit-logs", auditLogsRouter);
 router.use("/metrics", metricsRouter);
 router.use("/chart-data", chartDataRouter);
 router.use("/v1/external", externalRouter);
+router.use("/api-keys", apiKeysRouter);
+router.use("/api-key-templates", apiKeyTemplatesRouter);
 
 export default router;
