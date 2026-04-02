@@ -11,6 +11,8 @@ import sessionsRouter from "./sessions";
 import externalRouter from "./external";
 import apiKeysRouter from "./apiKeys";
 import apiKeyTemplatesRouter from "./apiKeyTemplates";
+import settingsRouter from "./settings";
+import adminUsersRouter from "./adminUsers";
 
 const router: IRouter = Router();
 
@@ -26,5 +28,7 @@ router.use("/chart-data", chartDataRouter);
 router.use("/v1/external", externalRouter);
 router.use("/api-keys", apiKeysRouter);
 router.use("/api-key-templates", apiKeyTemplatesRouter);
+router.use("/settings", settingsRouter);
+router.use("/admin-users", adminUsersRouter);
 
 export default router;

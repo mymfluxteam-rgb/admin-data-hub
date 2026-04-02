@@ -1,0 +1,145 @@
+ကျွန်တော့် Supabase project အတွက် **Admin Dashboard Settings Page** ကို အောက်ပါအတိုင်း ဆောက်ပေးပါ။
+
+## Project Context
+- Frontend: React + TypeScript
+- Backend: Supabase
+- Existing patterns: ရှိပြီးသား admin dashboard မှာ table-based UI, shadcn/ui components, react-hook-form, zod validation သုံးထားပါတယ်။
+
+## Settings Page Requirements
+
+### 1. General Settings Tab
+**Features:**
+- System name, logo upload
+- Default timezone
+- Date format
+- Default language
+- Contact email
+- Maintenance mode toggle
+
+### 2. User Management Settings Tab
+**Features:**
+- Default user role (user/admin/moderator)
+- Auto-verify email on registration (toggle)
+- Require admin approval for new users (toggle)
+- Default credits for new users (number input)
+- Session timeout (minutes)
+- Max login attempts before lock (number)
+- Account lock duration (minutes)
+
+### 3. API Settings Tab
+**Features:**
+- Default rate limit per API key (requests/minute)
+- Default API key expiry (days)
+- Allowed origins (CORS) - multi-input
+- API version (dropdown)
+- Enable/disable API access (toggle)
+- Require IP whitelist (toggle)
+
+### 4. HWID/Device Settings Tab
+**Features:**
+- Max devices per user (number)
+- Default session timeout (minutes)
+- Enforce device fingerprinting (toggle)
+- Auto-ban on multiple device switch (toggle)
+- Cooldown period for device switch (hours)
+- Max device switches per day (number)
+
+### 5. Credit & Pricing Settings Tab
+**Features:**
+- Base credit price ($ per credit)
+- Minimum credit purchase (number)
+- Maximum credit purchase (number)
+- Free credits on registration (number)
+- Credit expiry days (number)
+- Enable automatic credit deduction (toggle)
+
+### 6. Security Settings Tab
+**Features:**
+- Password policy (min length, require uppercase, numbers, symbols)
+- Two-factor authentication requirement (toggle)
+- Session security (IP binding, device tracking)
+- Audit log retention (days)
+- Failed login alert (toggle)
+- Suspicious activity alert (toggle)
+
+### 7. Notification Settings Tab
+**Features:**
+- Email notifications (SMTP settings)
+  - SMTP host
+  - SMTP port
+  - SMTP user
+  - SMTP password (masked)
+  - From email
+  - From name
+- Email templates
+  - Welcome email (edit)
+  - Password reset (edit)
+  - Credit low alert (edit)
+- Webhook URLs for events (multi-input)
+
+### 8. System Status Tab
+**Features:**
+- Database status (connected/disconnected)
+- API status (online/offline)
+- Last backup time
+- System uptime
+- Total users count
+- Active API keys count
+- Total credits in system
+- Recent errors (last 24h)
+
+### 9. Backup & Restore Tab
+**Features:**
+- Manual backup button
+- Scheduled backup (daily/weekly/monthly)
+- Restore from backup (file upload)
+- Export data (CSV/JSON)
+  - Users
+  - Transactions
+  - API keys
+  - Audit logs
+
+### 10. Admin Users Tab
+**Features:**
+- List all admin users
+- Add new admin
+- Edit admin permissions
+- Remove admin
+- Admin roles:
+  - Super Admin (full access)
+  - Settings Admin (can change settings)
+  - User Admin (can manage users)
+  - API Admin (can manage API keys)
+  - Finance Admin (can manage credits)
+  - Viewer (read-only)
+
+## UI Requirements
+
+1. **Tab-based layout** (use shadcn tabs component)
+2. **Save buttons**: 
+   - Save changes (saves current tab)
+   - Save all (saves all tabs)
+   - Reset to defaults
+3. **Form validation** with zod
+4. **Toast notifications** for success/error
+5. **Loading states** for async operations
+6. **Confirmation dialogs** for destructive actions
+7. **Real-time status indicators** (green/red dots)
+8. **Search and filter** for admin users list
+9. **Pagination** for data tables
+10. **Responsive design** (mobile-friendly)
+
+## Database Schema (Supabase)
+
+Settings data ကို အောက်ပါ table မှာ သိမ်းပါ:
+
+```sql
+CREATE TABLE admin_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  setting_key TEXT UNIQUE NOT NULL,
+  setting_value JSONB NOT NULL,
+  setting_group TEXT NOT NULL,
+  updated_by UUID REFERENCES users(id),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

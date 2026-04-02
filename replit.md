@@ -95,3 +95,97 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+## API Routes
+
+All routes mounted at `/api/`:
+
+| Route | File | Description |
+|---|---|---|
+| `/users` | `routes/users.ts` | User CRUD, ban/unban, credits, expiry, API keys |
+| `/transactions` | `routes/transactions.ts` | Transaction history |
+| `/hwids` | `routes/hwids.ts` | HWID/device management |
+| `/sessions` | `routes/sessions.ts` | Active session management |
+| `/audit-logs` | `routes/auditLogs.ts` | Audit log history |
+| `/metrics` | `routes/metrics.ts` | Dashboard metrics |
+| `/chart-data` | `routes/chartData.ts` | Chart time-series data |
+| `/api-keys` | `routes/apiKeys.ts` | Third-party API key management (CRUD, validate, rotate, revoke) |
+| `/api-key-templates` | `routes/apiKeyTemplates.ts` | Reusable API key permission templates |
+| `/settings` | `routes/settings.ts` | System settings (per-group upsert/fetch) |
+| `/admin-users` | `routes/adminUsers.ts` | Admin user promotion/demotion/role management |
+
+## Required Supabase Tables
+
+In addition to the existing tables (`users`, `transactions`, `hwids`, `device_sessions`, `audit_logs`), the following tables must be created in Supabase SQL Editor:
+
+```sql
+-- API Keys
+CREATE TABLE api_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  api_key TEXT UNIQUE NOT NULL,
+  api_key_hash TEXT UNIQUE NOT NULL,
+  key_name TEXT NOT NULL,
+  key_type TEXT DEFAULT 'third_party',
+  permissions JSONB DEFAULT '[]'::jsonb,
+  allowed_ips TEXT[] DEFAULT '{}',
+  allowed_origins TEXT[] DEFAULT '{}',
+  rate_limit INTEGER DEFAULT 100,
+  usage_count BIGINT DEFAULT 0,
+  last_used_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES users(id),
+  revoked_at TIMESTAMPTZ,
+  revoked_by UUID REFERENCES users(id),
+  revoke_reason TEXT
+);
+
+CREATE TABLE api_key_usage_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  api_key_id UUID REFERENCES api_keys(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id),
+  endpoint TEXT NOT NULL,
+  method TEXT NOT NULL,
+  ip_address TEXT,
+  user_agent TEXT,
+  response_status INTEGER,
+  response_time_ms INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE api_key_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  template_name TEXT UNIQUE NOT NULL,
+  permissions JSONB NOT NULL,
+  rate_limit INTEGER,
+  expires_in_days INTEGER,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Settings
+CREATE TABLE admin_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  setting_key TEXT UNIQUE NOT NULL,
+  setting_value JSONB NOT NULL,
+  setting_group TEXT NOT NULL,
+  updated_by UUID REFERENCES users(id),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+## Admin Dashboard Pages
+
+- `/` — Dashboard with metrics and charts
+- `/users` — User management
+- `/credits` — Credit management
+- `/transactions` — Transaction history
+- `/hwids` — HWID/device management
+- `/sessions` — Active sessions
+- `/analytics` — Analytics
+- `/audit-logs` — Audit logs
+- `/settings` — Full 10-tab settings page:
+  - General, User Management, API, HWID/Device, Credits & Pricing, Security, Notifications, System Status, Backup & Restore, Admin Users
