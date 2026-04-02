@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Ban, ShieldCheck, Eye, KeyRound, CalendarClock, RefreshCw, Copy, Clock, Trash2, AlertTriangle, UserPlus, EyeOff } from "lucide-react";
+import { Ban, ShieldCheck, Eye, KeyRound, CalendarClock, RefreshCw, Copy, Clock, Trash2, AlertTriangle, UserPlus, EyeOff, CircleCheck } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
@@ -174,6 +174,14 @@ export default function UsersPage() {
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
             title={u.status === "banned" ? "Unban" : "Ban"} onClick={() => handleBanToggle(u)}>
             <Ban className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-green-400"
+            title="Activate" disabled={u.status === "active"}
+            onClick={async () => {
+              const ok = await usersApi.activate(u.id);
+              if (ok) { toast.success(`${u.username} has been activated`); fetchUsers(); }
+            }}>
+            <CircleCheck className="h-3.5 w-3.5" />
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
             title="Verify" onClick={() => handleVerify(u)} disabled={u.verified}>

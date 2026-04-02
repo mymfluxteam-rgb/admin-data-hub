@@ -89,6 +89,16 @@ router.put("/:id/unban", async (req, res) => {
   res.json(data);
 });
 
+router.put("/:id/activate", async (req, res) => {
+  const { data, error } = await supabase
+    .from("users").update({ status: "active" }).eq("id", req.params["id"]).select().single();
+  if (error) { res.status(500).json({ message: error.message }); return; }
+  await supabase.from("audit_logs").insert({
+    action: "user.activate", actor: "admin", target: req.params["id"], details: "User activated",
+  });
+  res.json(data);
+});
+
 router.put("/:id/verify", async (req, res) => {
   const { data, error } = await supabase
     .from("users").update({ verified: true }).eq("id", req.params["id"]).select().single();

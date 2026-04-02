@@ -123,6 +123,7 @@ export const usersApi = {
 
   ban: (id: string) => request<User>("PUT", `/api/users/${id}/ban`),
   unban: (id: string) => request<User>("PUT", `/api/users/${id}/unban`),
+  activate: (id: string) => request<User>("PUT", `/api/users/${id}/activate`),
   verify: (id: string) => request<User>("PUT", `/api/users/${id}/verify`),
 
   setExpiry: (id: string, payload: {
