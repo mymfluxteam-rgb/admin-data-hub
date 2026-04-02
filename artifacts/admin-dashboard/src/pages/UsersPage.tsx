@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Ban, ShieldCheck, Eye, KeyRound, CalendarClock, RefreshCw, Copy, Clock, Trash2, AlertTriangle } from "lucide-react";
+import { Ban, ShieldCheck, Eye, KeyRound, CalendarClock, RefreshCw, Copy, Clock, Trash2, AlertTriangle, UserPlus, EyeOff } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 function ExpiryBadge({ expiry }: { expiry?: string | null }) {
@@ -61,6 +62,15 @@ export default function UsersPage() {
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Add user dialog
+  const [addOpen, setAddOpen] = useState(false);
+  const [addUsername, setAddUsername] = useState("");
+  const [addEmail, setAddEmail] = useState("");
+  const [addPassword, setAddPassword] = useState("");
+  const [addRole, setAddRole] = useState("user");
+  const [addSaving, setAddSaving] = useState(false);
+  const [showAddPassword, setShowAddPassword] = useState(false);
+
   const fetchUsers = () => {
     setLoading(true);
     usersApi.getAll().then(setUsers).finally(() => setLoading(false));
@@ -103,6 +113,30 @@ export default function UsersPage() {
       setTempPassword(result.temporaryPassword);
       toast.success(`Password reset for ${resetUser.username}`);
       setNewPassword("");
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!addUsername.trim()) { toast.error("Username is required"); return; }
+    if (!addEmail.trim()) { toast.error("Email is required"); return; }
+    if (addPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    setAddSaving(true);
+    const result = await usersApi.create({
+      username: addUsername.trim(),
+      email: addEmail.trim(),
+      password: addPassword,
+      role: addRole,
+    });
+    setAddSaving(false);
+    if (result) {
+      toast.success(`User "${addUsername}" created successfully`);
+      setAddOpen(false);
+      setAddUsername("");
+      setAddEmail("");
+      setAddPassword("");
+      setAddRole("user");
+      setShowAddPassword(false);
+      fetchUsers();
     }
   };
 
@@ -174,11 +208,16 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-        <p className="text-sm text-muted-foreground">
-          {loading ? "Loading..." : `${users.length} users total`}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">User Management</h1>
+          <p className="text-sm text-muted-foreground">
+            {loading ? "Loading..." : `${users.length} users total`}
+          </p>
+        </div>
+        <Button onClick={() => { setAddOpen(true); setShowAddPassword(false); }} className="gap-2 shrink-0">
+          <UserPlus className="h-4 w-4" /> Add New User
+        </Button>
       </div>
 
       <DataTable
@@ -188,6 +227,85 @@ export default function UsersPage() {
         searchPlaceholder="Search by email..."
         isLoading={loading}
       />
+
+      {/* Add New User Dialog */}
+      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) { setAddOpen(false); setShowAddPassword(false); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-primary" /> Add New User
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="add-username">Username <span className="text-destructive">*</span></Label>
+              <Input
+                id="add-username"
+                value={addUsername}
+                onChange={(e) => setAddUsername(e.target.value)}
+                placeholder="johndoe"
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="add-email">Email <span className="text-destructive">*</span></Label>
+              <Input
+                id="add-email"
+                type="email"
+                value={addEmail}
+                onChange={(e) => setAddEmail(e.target.value)}
+                placeholder="john@example.com"
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="add-password">Password <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <Input
+                  id="add-password"
+                  type={showAddPassword ? "text" : "password"}
+                  value={addPassword}
+                  onChange={(e) => setAddPassword(e.target.value)}
+                  placeholder="Min. 6 characters"
+                  className="pr-10"
+                  autoComplete="new-password"
+                  onKeyDown={(e) => e.key === "Enter" && handleAddUser()}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowAddPassword((v) => !v)}
+                >
+                  {showAddPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {addPassword.length > 0 && addPassword.length < 6 && (
+                <p className="text-xs text-destructive">Password must be at least 6 characters</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="add-role">Role</Label>
+              <Select value={addRole} onValueChange={setAddRole}>
+                <SelectTrigger id="add-role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="moderator">Moderator</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleAddUser} disabled={addSaving} className="gap-2">
+              {addSaving && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+              {addSaving ? "Creating..." : "Create User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!deleteUser} onOpenChange={(o) => !o && setDeleteUser(null)}>
         <DialogContent className="sm:max-w-sm">

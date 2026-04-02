@@ -118,7 +118,7 @@ export const usersApi = {
 
   getExpiringSoon: () => request<User[]>("GET", "/api/users/expiring-soon").then((d) => d ?? []),
 
-  create: (payload: { username: string; email: string; role?: string }) =>
+  create: (payload: { username: string; email: string; password: string; role?: string }) =>
     request<User>("POST", "/api/users", payload),
 
   ban: (id: string) => request<User>("PUT", `/api/users/${id}/ban`),

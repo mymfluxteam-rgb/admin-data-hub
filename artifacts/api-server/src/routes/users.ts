@@ -24,17 +24,48 @@ router.get("/expiring-soon", async (_req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { username, email, role } = req.body as { username?: string; email?: string; role?: string };
-  if (!username || !email) {
-    res.status(400).json({ message: "username and email are required" });
+  const { username, email, password, role } = req.body as {
+    username?: string; email?: string; password?: string; role?: string;
+  };
+  if (!username || !username.trim()) {
+    res.status(400).json({ message: "username is required" });
+    return;
+  }
+  if (!email || !email.trim()) {
+    res.status(400).json({ message: "email is required" });
+    return;
+  }
+  if (!password || password.length < 6) {
+    res.status(400).json({ message: "password must be at least 6 characters" });
     return;
   }
   const { data, error } = await supabase
     .from("users")
-    .insert({ username, email, role: role ?? "user", status: "active", verified: false, credits: 0 })
+    .insert({
+      username: username.trim(),
+      email: email.trim().toLowerCase(),
+      password_hash: password,
+      role: role ?? "user",
+      status: "active",
+      verified: false,
+      credits: 0,
+    })
     .select()
     .single();
-  if (error) { res.status(500).json({ message: error.message }); return; }
+  if (error) {
+    if (error.code === "23505") {
+      res.status(409).json({ message: "A user with that email or username already exists" });
+      return;
+    }
+    res.status(500).json({ message: error.message });
+    return;
+  }
+  await supabase.from("audit_logs").insert({
+    action: "user.create",
+    actor: "admin",
+    target: (data as Record<string, unknown>)["email"] as string,
+    details: `Created user: ${username.trim()}`,
+  });
   res.status(201).json(data);
 });
 
