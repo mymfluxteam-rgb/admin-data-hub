@@ -54,7 +54,7 @@ export default function SessionsPage() {
         <div className="flex items-center gap-2">
           <DeviceIcon type={s.device_type} />
           <div>
-            <div className="text-xs font-mono text-muted-foreground">{s.device_id.slice(0, 12)}…</div>
+            <div className="text-xs font-mono text-muted-foreground">{(s.device_id ?? "").slice(0, 12) || "—"}{s.device_id ? "…" : ""}</div>
             <div className="text-xs text-muted-foreground capitalize">{s.device_type ?? "unknown"}</div>
           </div>
         </div>
