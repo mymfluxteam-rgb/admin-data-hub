@@ -14,6 +14,7 @@ import apiKeyTemplatesRouter from "./apiKeyTemplates";
 import settingsRouter from "./settings";
 import adminUsersRouter from "./adminUsers";
 import userApiKeysRouter from "./userApiKeys";
+import publicRegisterRouter from "./publicRegister";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use("/api-key-templates", apiKeyTemplatesRouter);
 router.use("/settings", settingsRouter);
 router.use("/admin-users", adminUsersRouter);
 router.use("/user-api-keys", userApiKeysRouter);
+router.use("/v1/public", publicRegisterRouter);
 
 export default router;

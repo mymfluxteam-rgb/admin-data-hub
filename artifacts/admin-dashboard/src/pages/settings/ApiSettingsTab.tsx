@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Key, Globe, Plus, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import UserApiKeysPanel from "@/components/UserApiKeysPanel";
+import PublicRegisterDocs from "@/components/PublicRegisterDocs";
 
 const DEFAULTS = {
   default_rate_limit: 100,
@@ -167,6 +168,11 @@ export default function ApiSettingsTab() {
       {/* ─── Public API Key Generator ─── */}
       <div className="pt-2 border-t border-border/40">
         <UserApiKeysPanel />
+      </div>
+
+      {/* ─── Registration Endpoint Docs ─── */}
+      <div className="pt-2 border-t border-border/40">
+        <PublicRegisterDocs />
       </div>
     </div>
   );
