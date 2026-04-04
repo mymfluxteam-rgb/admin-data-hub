@@ -7,6 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, Globe, Mail, AlertTriangle } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { Language } from "@/i18n/translations";
 
 const DEFAULTS = {
   system_name: "LicenseAdmin",
@@ -20,6 +22,12 @@ const DEFAULTS = {
 
 export default function GeneralTab() {
   const { settings, update, loading, saving, save } = useSettingsGroup("general", DEFAULTS);
+  const { t, setLanguage } = useLanguage();
+
+  const handleLanguageChange = (lang: string) => {
+    update("language", lang);
+    setLanguage(lang as Language);
+  };
 
   if (loading) {
     return (
@@ -36,13 +44,13 @@ export default function GeneralTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Globe className="h-4 w-4 text-primary" /> System Identity
+            <Globe className="h-4 w-4 text-primary" /> {t("general.systemIdentity")}
           </CardTitle>
-          <CardDescription className="text-xs">Name, branding, and locale configuration</CardDescription>
+          <CardDescription className="text-xs">{t("general.systemIdentityDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="system_name">System Name</Label>
+            <Label htmlFor="system_name">{t("general.systemName")}</Label>
             <Input
               id="system_name"
               value={settings.system_name as string}
@@ -51,7 +59,7 @@ export default function GeneralTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="logo_url">Logo URL</Label>
+            <Label htmlFor="logo_url">{t("general.logoUrl")}</Label>
             <Input
               id="logo_url"
               value={settings.logo_url as string}
@@ -60,7 +68,7 @@ export default function GeneralTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="timezone">Timezone</Label>
+            <Label htmlFor="timezone">{t("general.timezone")}</Label>
             <Select value={settings.timezone as string} onValueChange={(v) => update("timezone", v)}>
               <SelectTrigger id="timezone"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -77,7 +85,7 @@ export default function GeneralTab() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="date_format">Date Format</Label>
+            <Label htmlFor="date_format">{t("general.dateFormat")}</Label>
             <Select value={settings.date_format as string} onValueChange={(v) => update("date_format", v)}>
               <SelectTrigger id="date_format"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -89,16 +97,16 @@ export default function GeneralTab() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="language">Language</Label>
-            <Select value={settings.language as string} onValueChange={(v) => update("language", v)}>
+            <Label htmlFor="language">{t("general.language")}</Label>
+            <Select value={settings.language as string} onValueChange={handleLanguageChange}>
               <SelectTrigger id="language"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="en">English</SelectItem>
-                <SelectItem value="es">Spanish</SelectItem>
-                <SelectItem value="fr">French</SelectItem>
-                <SelectItem value="de">German</SelectItem>
-                <SelectItem value="ja">Japanese</SelectItem>
-                <SelectItem value="zh">Chinese</SelectItem>
+                <SelectItem value="es">Español</SelectItem>
+                <SelectItem value="fr">Français</SelectItem>
+                <SelectItem value="de">Deutsch</SelectItem>
+                <SelectItem value="ja">日本語</SelectItem>
+                <SelectItem value="zh">中文</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -108,12 +116,12 @@ export default function GeneralTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Mail className="h-4 w-4 text-primary" /> Contact
+            <Mail className="h-4 w-4 text-primary" /> {t("general.contact")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 max-w-sm">
-            <Label htmlFor="contact_email">Contact Email</Label>
+            <Label htmlFor="contact_email">{t("general.contactEmail")}</Label>
             <Input
               id="contact_email"
               type="email"
@@ -128,11 +136,9 @@ export default function GeneralTab() {
       <Card className="border-amber-500/20 bg-amber-500/5">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-400" /> Maintenance Mode
+            <AlertTriangle className="h-4 w-4 text-amber-400" /> {t("general.maintenanceMode")}
           </CardTitle>
-          <CardDescription className="text-xs">
-            When enabled, the system will show a maintenance page to all users
-          </CardDescription>
+          <CardDescription className="text-xs">{t("general.maintenanceModeDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
@@ -143,9 +149,9 @@ export default function GeneralTab() {
             />
             <span className="text-sm">
               {settings.maintenance_mode ? (
-                <span className="text-amber-400 font-medium">Maintenance mode is ON</span>
+                <span className="text-amber-400 font-medium">{t("general.maintenanceOn")}</span>
               ) : (
-                <span className="text-muted-foreground">Maintenance mode is off</span>
+                <span className="text-muted-foreground">{t("general.maintenanceOff")}</span>
               )}
             </span>
           </div>
@@ -155,7 +161,7 @@ export default function GeneralTab() {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} className="gap-2">
           {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
-          Save General Settings
+          {t("general.save")}
         </Button>
       </div>
     </div>

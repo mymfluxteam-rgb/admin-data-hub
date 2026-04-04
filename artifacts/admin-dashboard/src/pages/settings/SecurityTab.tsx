@@ -7,6 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, ShieldCheck, Lock, Bell } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
 const DEFAULTS = {
   password_min_length: 8,
@@ -23,6 +25,7 @@ const DEFAULTS = {
 
 export default function SecurityTab() {
   const { settings, update, loading, saving, save } = useSettingsGroup("security", DEFAULTS);
+  const { t } = useLanguage();
 
   if (loading) {
     return (
@@ -32,18 +35,24 @@ export default function SecurityTab() {
     );
   }
 
+  const checkboxItems: [keyof typeof DEFAULTS, TranslationKey][] = [
+    ["require_uppercase", "security.requireUppercase"],
+    ["require_numbers", "security.requireNumbers"],
+    ["require_symbols", "security.requireSymbols"],
+  ];
+
   return (
     <div className="space-y-6">
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Lock className="h-4 w-4 text-primary" /> Password Policy
+            <Lock className="h-4 w-4 text-primary" /> {t("security.passwordPolicy")}
           </CardTitle>
-          <CardDescription className="text-xs">Requirements enforced when users set or change their password</CardDescription>
+          <CardDescription className="text-xs">{t("security.passwordPolicyDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="max-w-xs space-y-2">
-            <Label htmlFor="password_min_length">Minimum Password Length</Label>
+            <Label htmlFor="password_min_length">{t("security.minLength")}</Label>
             <Input
               id="password_min_length"
               type="number"
@@ -54,18 +63,14 @@ export default function SecurityTab() {
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {([
-              ["require_uppercase", "Require uppercase letters (A-Z)"],
-              ["require_numbers", "Require numbers (0-9)"],
-              ["require_symbols", "Require symbols (!@#$...)"],
-            ] as [keyof typeof DEFAULTS, string][]).map(([key, label]) => (
+            {checkboxItems.map(([key, labelKey]) => (
               <div key={key} className="flex items-center gap-2">
                 <Checkbox
                   id={key}
                   checked={settings[key] as boolean}
                   onCheckedChange={(v) => update(key, v === true)}
                 />
-                <Label htmlFor={key} className="font-normal text-sm cursor-pointer">{label}</Label>
+                <Label htmlFor={key} className="font-normal text-sm cursor-pointer">{t(labelKey)}</Label>
               </div>
             ))}
           </div>
@@ -75,14 +80,14 @@ export default function SecurityTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" /> Session Security
+            <ShieldCheck className="h-4 w-4 text-primary" /> {t("security.sessionSecurity")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between py-2 border-b border-border/30">
             <div>
-              <p className="text-sm font-medium">Require Two-Factor Authentication</p>
-              <p className="text-xs text-muted-foreground">Force all users to set up 2FA before accessing the system</p>
+              <p className="text-sm font-medium">{t("security.require2fa")}</p>
+              <p className="text-xs text-muted-foreground">{t("security.require2faDesc")}</p>
             </div>
             <Switch
               checked={settings.require_2fa as boolean}
@@ -91,8 +96,8 @@ export default function SecurityTab() {
           </div>
           <div className="flex items-center justify-between py-2 border-b border-border/30">
             <div>
-              <p className="text-sm font-medium">IP Binding</p>
-              <p className="text-xs text-muted-foreground">Lock sessions to the IP address used at login</p>
+              <p className="text-sm font-medium">{t("security.ipBinding")}</p>
+              <p className="text-xs text-muted-foreground">{t("security.ipBindingDesc")}</p>
             </div>
             <Switch
               checked={settings.ip_binding as boolean}
@@ -101,8 +106,8 @@ export default function SecurityTab() {
           </div>
           <div className="flex items-center justify-between py-2">
             <div>
-              <p className="text-sm font-medium">Device Tracking</p>
-              <p className="text-xs text-muted-foreground">Track devices used per session for anomaly detection</p>
+              <p className="text-sm font-medium">{t("security.deviceTracking")}</p>
+              <p className="text-xs text-muted-foreground">{t("security.deviceTrackingDesc")}</p>
             </div>
             <Switch
               checked={settings.device_tracking as boolean}
@@ -115,12 +120,12 @@ export default function SecurityTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Bell className="h-4 w-4 text-primary" /> Alerts & Audit
+            <Bell className="h-4 w-4 text-primary" /> {t("security.alertsAudit")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="max-w-xs space-y-2">
-            <Label htmlFor="audit_log_retention_days">Audit Log Retention (days)</Label>
+            <Label htmlFor="audit_log_retention_days">{t("security.auditRetention")}</Label>
             <Input
               id="audit_log_retention_days"
               type="number"
@@ -128,13 +133,13 @@ export default function SecurityTab() {
               value={settings.audit_log_retention_days as number}
               onChange={(e) => update("audit_log_retention_days", parseInt(e.target.value) || 90)}
             />
-            <p className="text-xs text-muted-foreground">Logs older than this are automatically deleted</p>
+            <p className="text-xs text-muted-foreground">{t("security.auditRetentionDesc")}</p>
           </div>
           <div className="space-y-3 border-t border-border/30 pt-4">
             <div className="flex items-center justify-between py-2 border-b border-border/30">
               <div>
-                <p className="text-sm font-medium">Failed Login Alerts</p>
-                <p className="text-xs text-muted-foreground">Notify admins when accounts hit the login attempt limit</p>
+                <p className="text-sm font-medium">{t("security.failedLogin")}</p>
+                <p className="text-xs text-muted-foreground">{t("security.failedLoginDesc")}</p>
               </div>
               <Switch
                 checked={settings.failed_login_alert as boolean}
@@ -143,8 +148,8 @@ export default function SecurityTab() {
             </div>
             <div className="flex items-center justify-between py-2">
               <div>
-                <p className="text-sm font-medium">Suspicious Activity Alerts</p>
-                <p className="text-xs text-muted-foreground">Detect and alert on unusual login patterns or locations</p>
+                <p className="text-sm font-medium">{t("security.suspiciousActivity")}</p>
+                <p className="text-xs text-muted-foreground">{t("security.suspiciousActivityDesc")}</p>
               </div>
               <Switch
                 checked={settings.suspicious_activity_alert as boolean}
@@ -158,7 +163,7 @@ export default function SecurityTab() {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} className="gap-2">
           {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
-          Save Security Settings
+          {t("security.save")}
         </Button>
       </div>
     </div>

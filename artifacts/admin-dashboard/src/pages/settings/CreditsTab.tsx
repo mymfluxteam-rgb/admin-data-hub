@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, CreditCard, DollarSign } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const DEFAULTS = {
   base_credit_price: 1.0,
@@ -18,6 +19,7 @@ const DEFAULTS = {
 
 export default function CreditsTab() {
   const { settings, update, loading, saving, save } = useSettingsGroup("credits", DEFAULTS);
+  const { t } = useLanguage();
 
   if (loading) {
     return (
@@ -32,13 +34,13 @@ export default function CreditsTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-primary" /> Pricing
+            <DollarSign className="h-4 w-4 text-primary" /> {t("credits.pricing")}
           </CardTitle>
-          <CardDescription className="text-xs">Configure credit pricing and purchase limits</CardDescription>
+          <CardDescription className="text-xs">{t("credits.pricingDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="base_credit_price">Base Credit Price ($ per credit)</Label>
+            <Label htmlFor="base_credit_price">{t("credits.basePrice")}</Label>
             <Input
               id="base_credit_price"
               type="number"
@@ -49,7 +51,7 @@ export default function CreditsTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="free_credits_on_registration">Free Credits on Registration</Label>
+            <Label htmlFor="free_credits_on_registration">{t("credits.freeOnReg")}</Label>
             <Input
               id="free_credits_on_registration"
               type="number"
@@ -59,7 +61,7 @@ export default function CreditsTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="min_credit_purchase">Minimum Credit Purchase</Label>
+            <Label htmlFor="min_credit_purchase">{t("credits.minPurchase")}</Label>
             <Input
               id="min_credit_purchase"
               type="number"
@@ -69,7 +71,7 @@ export default function CreditsTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="max_credit_purchase">Maximum Credit Purchase</Label>
+            <Label htmlFor="max_credit_purchase">{t("credits.maxPurchase")}</Label>
             <Input
               id="max_credit_purchase"
               type="number"
@@ -84,12 +86,12 @@ export default function CreditsTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-primary" /> Credit Policy
+            <CreditCard className="h-4 w-4 text-primary" /> {t("credits.policy")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="max-w-xs space-y-2">
-            <Label htmlFor="credit_expiry_days">Credit Expiry (days)</Label>
+            <Label htmlFor="credit_expiry_days">{t("credits.expiry")}</Label>
             <Input
               id="credit_expiry_days"
               type="number"
@@ -97,15 +99,13 @@ export default function CreditsTab() {
               value={settings.credit_expiry_days as number}
               onChange={(e) => update("credit_expiry_days", parseInt(e.target.value) || 0)}
             />
-            <p className="text-xs text-muted-foreground">Set to 0 for credits that never expire</p>
+            <p className="text-xs text-muted-foreground">{t("credits.expiryDesc")}</p>
           </div>
 
           <div className="flex items-center justify-between py-2 border-t border-border/30 pt-4">
             <div>
-              <p className="text-sm font-medium">Enable Automatic Credit Deduction</p>
-              <p className="text-xs text-muted-foreground">
-                Automatically deduct credits for API usage based on billing rules
-              </p>
+              <p className="text-sm font-medium">{t("credits.autoDeduction")}</p>
+              <p className="text-xs text-muted-foreground">{t("credits.autoDeductionDesc")}</p>
             </div>
             <Switch
               checked={settings.auto_deduction_enabled as boolean}
@@ -118,7 +118,7 @@ export default function CreditsTab() {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} className="gap-2">
           {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
-          Save Credit Settings
+          {t("credits.save")}
         </Button>
       </div>
     </div>

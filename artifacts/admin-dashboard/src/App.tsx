@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Sidebar } from "@/components/Sidebar";
 import Dashboard from "@/pages/Dashboard";
 import UsersPage from "@/pages/UsersPage";
@@ -11,6 +12,7 @@ import SessionsPage from "@/pages/SessionsPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import AuditLogsPage from "@/pages/AuditLogsPage";
 import SettingsPage from "@/pages/SettingsPage";
+import LandingPage from "@/pages/LandingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,10 +50,15 @@ function Layout() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <Layout />
-        <Toaster position="top-right" richColors closeButton />
-      </BrowserRouter>
+      <LanguageProvider>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <Routes>
+            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/*" element={<Layout />} />
+          </Routes>
+          <Toaster position="top-right" richColors closeButton />
+        </BrowserRouter>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

@@ -1,31 +1,27 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Users,
-  CreditCard,
-  Cpu,
-  BarChart3,
-  ScrollText,
-  Settings,
-  ArrowLeftRight,
-  MonitorSmartphone,
+  LayoutDashboard, Users, CreditCard, Cpu, BarChart3,
+  ScrollText, Settings, ArrowLeftRight, MonitorSmartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
-const NAV_ITEMS = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/users", icon: Users, label: "Users" },
-  { href: "/credits", icon: CreditCard, label: "Credits" },
-  { href: "/transactions", icon: ArrowLeftRight, label: "Transactions" },
-  { href: "/hwids", icon: Cpu, label: "HWIDs" },
-  { href: "/sessions", icon: MonitorSmartphone, label: "Sessions" },
-  { href: "/analytics", icon: BarChart3, label: "Analytics" },
-  { href: "/audit-logs", icon: ScrollText, label: "Audit Logs" },
-  { href: "/settings", icon: Settings, label: "Settings" },
+const NAV_ITEMS: { href: string; icon: React.ElementType; key: TranslationKey }[] = [
+  { href: "/", icon: LayoutDashboard, key: "nav.dashboard" },
+  { href: "/users", icon: Users, key: "nav.users" },
+  { href: "/credits", icon: CreditCard, key: "nav.credits" },
+  { href: "/transactions", icon: ArrowLeftRight, key: "nav.transactions" },
+  { href: "/hwids", icon: Cpu, key: "nav.hwids" },
+  { href: "/sessions", icon: MonitorSmartphone, key: "nav.sessions" },
+  { href: "/analytics", icon: BarChart3, key: "nav.analytics" },
+  { href: "/audit-logs", icon: ScrollText, key: "nav.auditLogs" },
+  { href: "/settings", icon: Settings, key: "nav.settings" },
 ];
 
 export function Sidebar() {
   const location = useLocation();
+  const { t } = useLanguage();
 
   return (
     <aside className="w-56 shrink-0 flex flex-col h-screen bg-sidebar border-r border-sidebar-border sticky top-0">
@@ -36,7 +32,13 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
+        <Link to="/landing">
+          <div className="flex items-center gap-2 px-3 py-1.5 mb-1 rounded-md text-xs font-medium transition-colors text-muted-foreground hover:text-primary hover:bg-sidebar-accent">
+            <span className="text-primary">◇</span> View Landing Page
+          </div>
+        </Link>
+        <div className="border-b border-sidebar-border mb-1.5" />
+        {NAV_ITEMS.map(({ href, icon: Icon, key }) => {
           const isActive = location.pathname === href;
           return (
             <Link key={href} to={href}>
@@ -49,7 +51,7 @@ export function Sidebar() {
                 )}
               >
                 <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "")} />
-                {label}
+                {t(key)}
               </div>
             </Link>
           );

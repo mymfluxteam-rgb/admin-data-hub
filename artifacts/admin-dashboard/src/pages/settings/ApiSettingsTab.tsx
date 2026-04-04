@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Key, Globe, Plus, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const DEFAULTS = {
   default_rate_limit: 100,
@@ -22,6 +23,7 @@ const DEFAULTS = {
 export default function ApiSettingsTab() {
   const { settings, update, loading, saving, save } = useSettingsGroup("api", DEFAULTS);
   const [newOrigin, setNewOrigin] = useState("");
+  const { t } = useLanguage();
 
   const addOrigin = () => {
     const trimmed = newOrigin.trim();
@@ -50,13 +52,13 @@ export default function ApiSettingsTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Key className="h-4 w-4 text-primary" /> API Key Defaults
+            <Key className="h-4 w-4 text-primary" /> {t("api.keyDefaults")}
           </CardTitle>
-          <CardDescription className="text-xs">Default values applied to newly created API keys</CardDescription>
+          <CardDescription className="text-xs">{t("api.keyDefaultsDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="default_rate_limit">Default Rate Limit (requests/min)</Label>
+            <Label htmlFor="default_rate_limit">{t("api.rateLimit")}</Label>
             <Input
               id="default_rate_limit"
               type="number"
@@ -66,7 +68,7 @@ export default function ApiSettingsTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="default_key_expiry_days">Default Key Expiry (days)</Label>
+            <Label htmlFor="default_key_expiry_days">{t("api.keyExpiry")}</Label>
             <Input
               id="default_key_expiry_days"
               type="number"
@@ -74,10 +76,10 @@ export default function ApiSettingsTab() {
               value={settings.default_key_expiry_days as number}
               onChange={(e) => update("default_key_expiry_days", parseInt(e.target.value) || 365)}
             />
-            <p className="text-xs text-muted-foreground">Set to 0 for no expiry</p>
+            <p className="text-xs text-muted-foreground">{t("api.setToZero")}</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="api_version">API Version</Label>
+            <Label htmlFor="api_version">{t("api.apiVersion")}</Label>
             <Select value={settings.api_version as string} onValueChange={(v) => update("api_version", v)}>
               <SelectTrigger id="api_version"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -93,11 +95,9 @@ export default function ApiSettingsTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Globe className="h-4 w-4 text-primary" /> CORS — Allowed Origins
+            <Globe className="h-4 w-4 text-primary" /> {t("api.cors")}
           </CardTitle>
-          <CardDescription className="text-xs">
-            Domains allowed to make cross-origin requests. Leave empty to allow all origins.
-          </CardDescription>
+          <CardDescription className="text-xs">{t("api.corsDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
@@ -108,12 +108,12 @@ export default function ApiSettingsTab() {
               onKeyDown={(e) => e.key === "Enter" && addOrigin()}
             />
             <Button variant="outline" size="sm" onClick={addOrigin} className="shrink-0 gap-1">
-              <Plus className="h-4 w-4" /> Add
+              <Plus className="h-4 w-4" /> {t("api.add")}
             </Button>
           </div>
           <div className="flex flex-wrap gap-2 min-h-[2rem]">
             {(settings.allowed_origins as string[]).length === 0 ? (
-              <p className="text-xs text-muted-foreground">No origin restrictions (all origins allowed)</p>
+              <p className="text-xs text-muted-foreground">{t("api.corsEmpty")}</p>
             ) : (
               (settings.allowed_origins as string[]).map((origin) => (
                 <Badge key={origin} variant="secondary" className="gap-1 font-mono text-xs">
@@ -130,13 +130,13 @@ export default function ApiSettingsTab() {
 
       <Card className="border-border/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Access Control</CardTitle>
+          <CardTitle className="text-base">{t("api.accessControl")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between py-2 border-b border-border/30">
             <div>
-              <p className="text-sm font-medium">API Access Enabled</p>
-              <p className="text-xs text-muted-foreground">Disable to block all third-party API requests</p>
+              <p className="text-sm font-medium">{t("api.apiAccess")}</p>
+              <p className="text-xs text-muted-foreground">{t("api.apiAccessDesc")}</p>
             </div>
             <Switch
               checked={settings.api_access_enabled as boolean}
@@ -145,8 +145,8 @@ export default function ApiSettingsTab() {
           </div>
           <div className="flex items-center justify-between py-2">
             <div>
-              <p className="text-sm font-medium">Require IP Whitelist</p>
-              <p className="text-xs text-muted-foreground">Only allow requests from IPs listed on each key</p>
+              <p className="text-sm font-medium">{t("api.ipWhitelist")}</p>
+              <p className="text-xs text-muted-foreground">{t("api.ipWhitelistDesc")}</p>
             </div>
             <Switch
               checked={settings.require_ip_whitelist as boolean}
@@ -159,7 +159,7 @@ export default function ApiSettingsTab() {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} className="gap-2">
           {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
-          Save API Settings
+          {t("api.save")}
         </Button>
       </div>
     </div>

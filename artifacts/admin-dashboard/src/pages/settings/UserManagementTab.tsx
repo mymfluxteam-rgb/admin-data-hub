@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, Users, Shield, Clock } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const DEFAULTS = {
   default_role: "user",
@@ -20,6 +21,7 @@ const DEFAULTS = {
 
 export default function UserManagementTab() {
   const { settings, update, loading, saving, save } = useSettingsGroup("user_management", DEFAULTS);
+  const { t } = useLanguage();
 
   if (loading) {
     return (
@@ -34,14 +36,14 @@ export default function UserManagementTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" /> Registration Defaults
+            <Users className="h-4 w-4 text-primary" /> {t("users.regDefaults")}
           </CardTitle>
-          <CardDescription className="text-xs">Settings applied when a new user registers</CardDescription>
+          <CardDescription className="text-xs">{t("users.regDefaultsDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="default_role">Default User Role</Label>
+              <Label htmlFor="default_role">{t("users.defaultRole")}</Label>
               <Select value={settings.default_role as string} onValueChange={(v) => update("default_role", v)}>
                 <SelectTrigger id="default_role"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -52,7 +54,7 @@ export default function UserManagementTab() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="default_credits">Free Credits on Registration</Label>
+              <Label htmlFor="default_credits">{t("users.freeCredits")}</Label>
               <Input
                 id="default_credits"
                 type="number"
@@ -66,8 +68,8 @@ export default function UserManagementTab() {
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between py-2 border-b border-border/30">
               <div>
-                <p className="text-sm font-medium">Auto-verify email on registration</p>
-                <p className="text-xs text-muted-foreground">Skip email verification step for new users</p>
+                <p className="text-sm font-medium">{t("users.autoVerify")}</p>
+                <p className="text-xs text-muted-foreground">{t("users.autoVerifyDesc")}</p>
               </div>
               <Switch
                 checked={settings.auto_verify_email as boolean}
@@ -76,8 +78,8 @@ export default function UserManagementTab() {
             </div>
             <div className="flex items-center justify-between py-2">
               <div>
-                <p className="text-sm font-medium">Require admin approval for new users</p>
-                <p className="text-xs text-muted-foreground">New accounts must be manually approved before activation</p>
+                <p className="text-sm font-medium">{t("users.requireApproval")}</p>
+                <p className="text-xs text-muted-foreground">{t("users.requireApprovalDesc")}</p>
               </div>
               <Switch
                 checked={settings.require_admin_approval as boolean}
@@ -91,12 +93,12 @@ export default function UserManagementTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Clock className="h-4 w-4 text-primary" /> Session Settings
+            <Clock className="h-4 w-4 text-primary" /> {t("users.sessionSettings")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 max-w-xs">
-            <Label htmlFor="session_timeout">Session Timeout (minutes)</Label>
+            <Label htmlFor="session_timeout">{t("users.sessionTimeout")}</Label>
             <Input
               id="session_timeout"
               type="number"
@@ -104,7 +106,7 @@ export default function UserManagementTab() {
               value={settings.session_timeout as number}
               onChange={(e) => update("session_timeout", parseInt(e.target.value) || 60)}
             />
-            <p className="text-xs text-muted-foreground">Users are logged out after this period of inactivity</p>
+            <p className="text-xs text-muted-foreground">{t("users.sessionTimeoutDesc")}</p>
           </div>
         </CardContent>
       </Card>
@@ -112,12 +114,12 @@ export default function UserManagementTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Shield className="h-4 w-4 text-primary" /> Account Lock Policy
+            <Shield className="h-4 w-4 text-primary" /> {t("users.accountLock")}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="max_login_attempts">Max Login Attempts Before Lock</Label>
+            <Label htmlFor="max_login_attempts">{t("users.maxLoginAttempts")}</Label>
             <Input
               id="max_login_attempts"
               type="number"
@@ -128,7 +130,7 @@ export default function UserManagementTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="account_lock_duration">Account Lock Duration (minutes)</Label>
+            <Label htmlFor="account_lock_duration">{t("users.lockDuration")}</Label>
             <Input
               id="account_lock_duration"
               type="number"
@@ -143,7 +145,7 @@ export default function UserManagementTab() {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} className="gap-2">
           {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
-          Save User Management Settings
+          {t("users.save")}
         </Button>
       </div>
     </div>

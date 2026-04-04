@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, Mail, Webhook, Plus, X, Eye, EyeOff } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
 const DEFAULTS = {
   smtp_host: "",
@@ -25,6 +27,7 @@ export default function NotificationsTab() {
   const { settings, update, loading, saving, save } = useSettingsGroup("notifications", DEFAULTS);
   const [showPassword, setShowPassword] = useState(false);
   const [newWebhook, setNewWebhook] = useState("");
+  const { t } = useLanguage();
 
   const addWebhook = () => {
     const trimmed = newWebhook.trim();
@@ -48,46 +51,36 @@ export default function NotificationsTab() {
     );
   }
 
+  const emailTemplates: [keyof typeof DEFAULTS, TranslationKey, TranslationKey][] = [
+    ["welcome_email_template", "notifications.welcomeEmail", "notifications.welcomeEmailHint"],
+    ["password_reset_template", "notifications.passwordReset", "notifications.passwordResetHint"],
+    ["credit_low_alert_template", "notifications.creditLow", "notifications.creditLowHint"],
+  ];
+
   return (
     <div className="space-y-6">
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Mail className="h-4 w-4 text-primary" /> SMTP Configuration
+            <Mail className="h-4 w-4 text-primary" /> {t("notifications.smtp")}
           </CardTitle>
-          <CardDescription className="text-xs">Email server settings for outgoing notifications</CardDescription>
+          <CardDescription className="text-xs">{t("notifications.smtpDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="smtp_host">SMTP Host</Label>
-            <Input
-              id="smtp_host"
-              value={settings.smtp_host as string}
-              onChange={(e) => update("smtp_host", e.target.value)}
-              placeholder="smtp.example.com"
-            />
+            <Label htmlFor="smtp_host">{t("notifications.smtpHost")}</Label>
+            <Input id="smtp_host" value={settings.smtp_host as string} onChange={(e) => update("smtp_host", e.target.value)} placeholder="smtp.example.com" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="smtp_port">SMTP Port</Label>
-            <Input
-              id="smtp_port"
-              type="number"
-              value={settings.smtp_port as number}
-              onChange={(e) => update("smtp_port", parseInt(e.target.value) || 587)}
-              placeholder="587"
-            />
+            <Label htmlFor="smtp_port">{t("notifications.smtpPort")}</Label>
+            <Input id="smtp_port" type="number" value={settings.smtp_port as number} onChange={(e) => update("smtp_port", parseInt(e.target.value) || 587)} placeholder="587" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="smtp_user">SMTP Username</Label>
-            <Input
-              id="smtp_user"
-              value={settings.smtp_user as string}
-              onChange={(e) => update("smtp_user", e.target.value)}
-              placeholder="user@example.com"
-            />
+            <Label htmlFor="smtp_user">{t("notifications.smtpUser")}</Label>
+            <Input id="smtp_user" value={settings.smtp_user as string} onChange={(e) => update("smtp_user", e.target.value)} placeholder="user@example.com" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="smtp_password">SMTP Password</Label>
+            <Label htmlFor="smtp_password">{t("notifications.smtpPassword")}</Label>
             <div className="relative">
               <Input
                 id="smtp_password"
@@ -97,53 +90,34 @@ export default function NotificationsTab() {
                 placeholder="••••••••"
                 className="pr-10"
               />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowPassword((v) => !v)}
-              >
+              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword((v) => !v)}>
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="from_email">From Email</Label>
-            <Input
-              id="from_email"
-              type="email"
-              value={settings.from_email as string}
-              onChange={(e) => update("from_email", e.target.value)}
-              placeholder="noreply@example.com"
-            />
+            <Label htmlFor="from_email">{t("notifications.fromEmail")}</Label>
+            <Input id="from_email" type="email" value={settings.from_email as string} onChange={(e) => update("from_email", e.target.value)} placeholder="noreply@example.com" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="from_name">From Name</Label>
-            <Input
-              id="from_name"
-              value={settings.from_name as string}
-              onChange={(e) => update("from_name", e.target.value)}
-              placeholder="LicenseAdmin"
-            />
+            <Label htmlFor="from_name">{t("notifications.fromName")}</Label>
+            <Input id="from_name" value={settings.from_name as string} onChange={(e) => update("from_name", e.target.value)} placeholder="LicenseAdmin" />
           </div>
         </CardContent>
       </Card>
 
       <Card className="border-border/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Email Templates</CardTitle>
+          <CardTitle className="text-base">{t("notifications.emailTemplates")}</CardTitle>
           <CardDescription className="text-xs">
-            Use <code className="bg-muted px-1 rounded font-mono text-xs">{"{{variable}}"}</code> for dynamic content
+            {t("notifications.emailTemplatesDesc")} — use <code className="bg-muted px-1 rounded font-mono text-xs">{"{{variable}}"}</code>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {([
-            ["welcome_email_template", "Welcome Email", "Sent when a new user registers"],
-            ["password_reset_template", "Password Reset", "Sent when a user requests a password reset"],
-            ["credit_low_alert_template", "Credit Low Alert", "Sent when a user's credits fall below threshold"],
-          ] as [keyof typeof DEFAULTS, string, string][]).map(([key, label, hint]) => (
+          {emailTemplates.map(([key, labelKey, hintKey]) => (
             <div key={key} className="space-y-2">
-              <Label htmlFor={key}>{label}</Label>
-              <p className="text-xs text-muted-foreground">{hint}</p>
+              <Label htmlFor={key}>{t(labelKey)}</Label>
+              <p className="text-xs text-muted-foreground">{t(hintKey)}</p>
               <textarea
                 id={key}
                 rows={3}
@@ -159,35 +133,25 @@ export default function NotificationsTab() {
       <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Webhook className="h-4 w-4 text-primary" /> Webhook URLs
+            <Webhook className="h-4 w-4 text-primary" /> {t("notifications.webhooks")}
           </CardTitle>
-          <CardDescription className="text-xs">
-            Receive event notifications via HTTP POST to these URLs
-          </CardDescription>
+          <CardDescription className="text-xs">{t("notifications.webhooksDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
-            <Input
-              value={newWebhook}
-              onChange={(e) => setNewWebhook(e.target.value)}
-              placeholder="https://hooks.example.com/events"
-              onKeyDown={(e) => e.key === "Enter" && addWebhook()}
-            />
+            <Input value={newWebhook} onChange={(e) => setNewWebhook(e.target.value)} placeholder="https://hooks.example.com/events" onKeyDown={(e) => e.key === "Enter" && addWebhook()} />
             <Button variant="outline" size="sm" onClick={addWebhook} className="shrink-0 gap-1">
-              <Plus className="h-4 w-4" /> Add
+              <Plus className="h-4 w-4" /> {t("notifications.add")}
             </Button>
           </div>
           <div className="space-y-2 min-h-[2rem]">
             {(settings.webhook_urls as string[]).length === 0 ? (
-              <p className="text-xs text-muted-foreground">No webhooks configured</p>
+              <p className="text-xs text-muted-foreground">{t("notifications.noWebhooks")}</p>
             ) : (
               (settings.webhook_urls as string[]).map((url) => (
                 <div key={url} className="flex items-center justify-between p-2 rounded-md bg-secondary/50 border border-border/30">
                   <span className="font-mono text-xs truncate">{url}</span>
-                  <button
-                    onClick={() => removeWebhook(url)}
-                    className="ml-2 text-muted-foreground hover:text-destructive shrink-0"
-                  >
+                  <button onClick={() => removeWebhook(url)} className="ml-2 text-muted-foreground hover:text-destructive shrink-0">
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -200,7 +164,7 @@ export default function NotificationsTab() {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} className="gap-2">
           {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
-          Save Notification Settings
+          {t("notifications.save")}
         </Button>
       </div>
     </div>

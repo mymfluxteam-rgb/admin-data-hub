@@ -7,6 +7,7 @@ import { AddUserDialog } from "@/components/AddUserDialog";
 import { AddCreditDialog } from "@/components/AddCreditDialog";
 import { HwidActionDialog } from "@/components/HwidActionDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const tooltipStyle = {
   background: "hsl(224, 18%, 9%)",
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics>(DEFAULT_METRICS);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
 
   useEffect(() => {
     Promise.all([metricsApi.getDashboard(), metricsApi.getChartData()]).then(
@@ -32,18 +34,18 @@ export default function Dashboard() {
   }, []);
 
   const metricCards = [
-    { title: "Total Users", value: metrics.totalUsers.toLocaleString(), change: metrics.userGrowth, icon: Users },
-    { title: "Active Users", value: metrics.activeUsers.toLocaleString(), change: metrics.activeGrowth, icon: UserCheck },
-    { title: "Revenue", value: `$${metrics.revenue.toLocaleString()}`, change: metrics.revenueGrowth, icon: DollarSign },
-    { title: "API Calls", value: metrics.apiCalls.toLocaleString(), change: metrics.apiGrowth, icon: Activity },
+    { title: t("dashboard.totalUsers"), value: metrics.totalUsers.toLocaleString(), change: metrics.userGrowth, icon: Users },
+    { title: t("dashboard.activeUsers"), value: metrics.activeUsers.toLocaleString(), change: metrics.activeGrowth, icon: UserCheck },
+    { title: t("dashboard.revenue"), value: `$${metrics.revenue.toLocaleString()}`, change: metrics.revenueGrowth, icon: DollarSign },
+    { title: t("dashboard.apiCalls"), value: metrics.apiCalls.toLocaleString(), change: metrics.apiGrowth, icon: Activity },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">License management overview</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <AddUserDialog />
@@ -65,7 +67,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="glass-card rounded-lg p-6 animate-fade-in" style={{ animationDelay: "400ms" }}>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">User Growth (30 days)</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">{t("dashboard.userGrowth")}</h3>
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={chartData}>
               <defs>
@@ -84,7 +86,7 @@ export default function Dashboard() {
         </div>
 
         <div className="glass-card rounded-lg p-6 animate-fade-in" style={{ animationDelay: "500ms" }}>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">Revenue Trends (30 days)</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">{t("dashboard.revenueTrends")}</h3>
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={chartData}>
               <defs>
