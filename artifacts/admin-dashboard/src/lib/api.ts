@@ -209,6 +209,29 @@ export const creditsApi = {
   },
 };
 
+export interface UserApiKey {
+  id: string;
+  user_id: string;
+  app_name: string;
+  public_key: string;
+  app_secret?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export const userApiKeysApi = {
+  getAll: (userId?: string) => {
+    const url = userId ? `/api/user-api-keys?user_id=${encodeURIComponent(userId)}` : "/api/user-api-keys";
+    return request<UserApiKey[]>("GET", url).then((d) => d ?? []);
+  },
+  generate: (appName: string, userId: string) =>
+    request<UserApiKey>("POST", "/api/user-api-keys", { app_name: appName, user_id: userId }),
+  revoke: (id: string) =>
+    request<UserApiKey>("POST", `/api/user-api-keys/${id}/revoke`, {}),
+  delete: (id: string) =>
+    request<null>("DELETE", `/api/user-api-keys/${id}`),
+};
+
 export const authApi = {
   login: async (email: string, password: string): Promise<{ token: string; user: User } | null> => {
     const res = await request<{ token: string; user: User }>("POST", "/auth/login", { email, password });

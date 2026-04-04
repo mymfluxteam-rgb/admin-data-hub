@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Key, Globe, Plus, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import UserApiKeysPanel from "@/components/UserApiKeysPanel";
 
 const DEFAULTS = {
   default_rate_limit: 100,
@@ -161,6 +162,11 @@ export default function ApiSettingsTab() {
           {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
           {t("api.save")}
         </Button>
+      </div>
+
+      {/* ─── Public API Key Generator ─── */}
+      <div className="pt-2 border-t border-border/40">
+        <UserApiKeysPanel />
       </div>
     </div>
   );
