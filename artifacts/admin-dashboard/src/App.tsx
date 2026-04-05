@@ -13,6 +13,7 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import AuditLogsPage from "@/pages/AuditLogsPage";
 import SettingsPage from "@/pages/SettingsPage";
 import LandingPage from "@/pages/LandingPage";
+import LoginPage from "@/pages/LoginPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +23,12 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem("admin_jwt");
+  if (!token) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
 
 function Layout() {
   return (
@@ -54,7 +61,15 @@ export default function App() {
         <BrowserRouter basename={import.meta.env.BASE_URL}>
           <Routes>
             <Route path="/landing" element={<LandingPage />} />
-            <Route path="/*" element={<Layout />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/*"
+              element={
+                <RequireAuth>
+                  <Layout />
+                </RequireAuth>
+              }
+            />
           </Routes>
           <Toaster position="top-right" richColors closeButton />
         </BrowserRouter>

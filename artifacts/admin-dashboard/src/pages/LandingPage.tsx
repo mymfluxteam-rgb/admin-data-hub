@@ -305,14 +305,14 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link
-            to="/"
+            to="/login"
             className="text-sm px-4 py-2 rounded-lg transition-colors duration-200"
             style={{ color: "#94a3b8" }}
           >
             Sign in
           </Link>
           <Link
-            to="/"
+            to="/login"
             className="text-sm px-5 py-2 rounded-xl font-semibold transition-all duration-200 hover:scale-105"
             style={{
               background: "linear-gradient(135deg, #0ea5e9, #06b6d4)",
@@ -394,7 +394,7 @@ export default function LandingPage() {
 
         <div className="fade-up-d3 flex flex-col sm:flex-row gap-4 items-center justify-center">
           <Link
-            to="/"
+            to="/login"
             className="group flex items-center gap-2 px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-300 hover:scale-105"
             style={{
               background: "linear-gradient(135deg, #0ea5e9, #06b6d4)",
