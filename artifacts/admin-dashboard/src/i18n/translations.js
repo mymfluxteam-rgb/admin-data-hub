@@ -8,7 +8,7 @@ export const LANGUAGE_NAMES = {
 };
 export const translations = {
     en: {
-        "nav.dashboard": "Dashboard", "nav.applications": "Applications", "nav.licenses": "Licenses",
+        "nav.dashboard": "Dashboard", "nav.applications": "Applications", "nav.licenses": "Licenses", "nav.sdk": "Developer SDK",
         "nav.users": "Users", "nav.credits": "Credits",
         "nav.transactions": "Transactions", "nav.hwids": "HWIDs", "nav.sessions": "Sessions",
         "nav.analytics": "Analytics", "nav.auditLogs": "Audit Logs", "nav.settings": "Settings",
@@ -109,7 +109,7 @@ export const translations = {
         "common.save": "Save", "common.saving": "Saving...", "common.add": "Add", "common.loading": "Loading...",
     },
     es: {
-        "nav.dashboard": "Panel", "nav.applications": "Aplicaciones", "nav.licenses": "Licencias",
+        "nav.dashboard": "Panel", "nav.applications": "Aplicaciones", "nav.licenses": "Licencias", "nav.sdk": "SDK para Desarrolladores",
         "nav.users": "Usuarios", "nav.credits": "Créditos",
         "nav.transactions": "Transacciones", "nav.hwids": "HWIDs", "nav.sessions": "Sesiones",
         "nav.analytics": "Analítica", "nav.auditLogs": "Auditoría", "nav.settings": "Configuración",
@@ -210,7 +210,7 @@ export const translations = {
         "common.save": "Guardar", "common.saving": "Guardando...", "common.add": "Añadir", "common.loading": "Cargando...",
     },
     fr: {
-        "nav.dashboard": "Tableau de bord", "nav.applications": "Applications", "nav.licenses": "Licences",
+        "nav.dashboard": "Tableau de bord", "nav.applications": "Applications", "nav.licenses": "Licences", "nav.sdk": "SDK Développeur",
         "nav.users": "Utilisateurs", "nav.credits": "Crédits",
         "nav.transactions": "Transactions", "nav.hwids": "HWIDs", "nav.sessions": "Sessions",
         "nav.analytics": "Analytique", "nav.auditLogs": "Journaux d'audit", "nav.settings": "Paramètres",
@@ -311,7 +311,7 @@ export const translations = {
         "common.save": "Enregistrer", "common.saving": "Enregistrement...", "common.add": "Ajouter", "common.loading": "Chargement...",
     },
     de: {
-        "nav.dashboard": "Dashboard", "nav.applications": "Anwendungen", "nav.licenses": "Lizenzen",
+        "nav.dashboard": "Dashboard", "nav.applications": "Anwendungen", "nav.licenses": "Lizenzen", "nav.sdk": "Entwickler-SDK",
         "nav.users": "Benutzer", "nav.credits": "Guthaben",
         "nav.transactions": "Transaktionen", "nav.hwids": "HWIDs", "nav.sessions": "Sitzungen",
         "nav.analytics": "Analyse", "nav.auditLogs": "Prüfprotokolle", "nav.settings": "Einstellungen",
@@ -412,7 +412,7 @@ export const translations = {
         "common.save": "Speichern", "common.saving": "Speichern...", "common.add": "Hinzufügen", "common.loading": "Laden...",
     },
     ja: {
-        "nav.dashboard": "ダッシュボード", "nav.applications": "アプリケーション", "nav.licenses": "ライセンス",
+        "nav.dashboard": "ダッシュボード", "nav.applications": "アプリケーション", "nav.licenses": "ライセンス", "nav.sdk": "開発者SDK",
         "nav.users": "ユーザー", "nav.credits": "クレジット",
         "nav.transactions": "取引", "nav.hwids": "HWID", "nav.sessions": "セッション",
         "nav.analytics": "分析", "nav.auditLogs": "監査ログ", "nav.settings": "設定",
@@ -513,7 +513,7 @@ export const translations = {
         "common.save": "保存", "common.saving": "保存中...", "common.add": "追加", "common.loading": "読み込み中...",
     },
     zh: {
-        "nav.dashboard": "仪表板", "nav.applications": "应用程序", "nav.licenses": "许可证",
+        "nav.dashboard": "仪表板", "nav.applications": "应用程序", "nav.licenses": "许可证", "nav.sdk": "开发者SDK",
         "nav.users": "用户", "nav.credits": "积分",
         "nav.transactions": "交易", "nav.hwids": "硬件ID", "nav.sessions": "会话",
         "nav.analytics": "分析", "nav.auditLogs": "审计日志", "nav.settings": "设置",
