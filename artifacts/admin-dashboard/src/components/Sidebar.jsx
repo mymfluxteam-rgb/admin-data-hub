@@ -1,9 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CreditCard, Cpu, BarChart3, ScrollText, Settings, ArrowLeftRight, MonitorSmartphone, } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Cpu, BarChart3, ScrollText, Settings, ArrowLeftRight, MonitorSmartphone, AppWindow, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 const NAV_ITEMS = [
     { href: "/", icon: LayoutDashboard, key: "nav.dashboard" },
+    { href: "/applications", icon: AppWindow, key: "nav.applications" },
+    { href: "/licenses", icon: KeyRound, key: "nav.licenses" },
     { href: "/users", icon: Users, key: "nav.users" },
     { href: "/credits", icon: CreditCard, key: "nav.credits" },
     { href: "/transactions", icon: ArrowLeftRight, key: "nav.transactions" },

@@ -1,0 +1,291 @@
+import { useEffect, useState } from "react";
+import { useSearchParams, Link } from "react-router-dom";
+import { licensesApi, applicationsApi } from "@/lib/api";
+import { DataTable } from "@/components/DataTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel,
+    AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+    AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Copy, Plus, Trash2, ArrowLeft, Ban, CheckCircle, XCircle } from "lucide-react";
+
+const STATUS_COLORS = {
+    active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    inactive: "bg-muted text-muted-foreground border-border",
+    banned: "bg-red-500/10 text-red-400 border-red-500/20",
+};
+
+function StatusBadge({ status }) {
+    return (
+        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status] ?? STATUS_COLORS.inactive}`}>
+            {status}
+        </span>
+    );
+}
+
+function ExpiryDisplay({ expires_at }) {
+    if (!expires_at) return <span className="text-xs text-muted-foreground">Never</span>;
+    const date = new Date(expires_at);
+    const isPast = date < new Date();
+    return (
+        <span className={`text-xs ${isPast ? "text-red-400" : "text-muted-foreground"}`}>
+            {isPast ? "Expired " : ""}{date.toLocaleDateString()}
+        </span>
+    );
+}
+
+export default function LicensesPage() {
+    const [searchParams] = useSearchParams();
+    const filterAppId = searchParams.get("app_id");
+    const filterAppName = searchParams.get("app_name");
+
+    const [licenses, setLicenses] = useState([]);
+    const [apps, setApps] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const [createOpen, setCreateOpen] = useState(false);
+    const [selectedAppId, setSelectedAppId] = useState(filterAppId ?? "");
+    const [count, setCount] = useState("1");
+    const [userLabel, setUserLabel] = useState("");
+    const [notes, setNotes] = useState("");
+    const [expiresAt, setExpiresAt] = useState("");
+    const [creating, setCreating] = useState(false);
+
+    const [statusDialog, setStatusDialog] = useState(null);
+    const [deleteDialog, setDeleteDialog] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const fetchLicenses = () => {
+        setLoading(true);
+        licensesApi.getAll(filterAppId).then(setLicenses).finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        fetchLicenses();
+        applicationsApi.getAll().then(setApps);
+    }, [filterAppId]);
+
+    const handleCreate = async () => {
+        if (!selectedAppId) return;
+        setCreating(true);
+        const result = await licensesApi.create({
+            app_id: selectedAppId,
+            count: Number(count) || 1,
+            user_label: userLabel || undefined,
+            notes: notes || undefined,
+            expires_at: expiresAt || undefined,
+        });
+        setCreating(false);
+        if (result) {
+            const n = Array.isArray(result) ? result.length : 1;
+            toast.success(`${n} license key${n !== 1 ? "s" : ""} created`);
+            setCreateOpen(false);
+            setUserLabel("");
+            setNotes("");
+            setExpiresAt("");
+            setCount("1");
+            fetchLicenses();
+        }
+    };
+
+    const handleSetStatus = async (license, status) => {
+        const result = await licensesApi.setStatus(license.id, status);
+        if (result) {
+            toast.success(`License set to ${status}`);
+            setStatusDialog(null);
+            fetchLicenses();
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteDialog) return;
+        setDeleting(true);
+        const ok = await licensesApi.delete(deleteDialog.id);
+        setDeleting(false);
+        if (ok !== false) {
+            toast.success("License deleted");
+            setDeleteDialog(null);
+            fetchLicenses();
+        }
+    };
+
+    const columns = [
+        {
+            key: "license_key",
+            label: "License Key",
+            render: (v) => (
+                <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs text-foreground">{v}</span>
+                    <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                        onClick={() => { navigator.clipboard.writeText(v); toast.success("Copied"); }}>
+                        <Copy className="h-3 w-3" />
+                    </Button>
+                </div>
+            ),
+        },
+        {
+            key: "status",
+            label: "Status",
+            render: (v) => <StatusBadge status={v} />,
+        },
+        {
+            key: "user_label",
+            label: "Label",
+            render: (v) => <span className="text-xs text-muted-foreground">{v || "—"}</span>,
+        },
+        {
+            key: "expires_at",
+            label: "Expires",
+            render: (v) => <ExpiryDisplay expires_at={v} />,
+        },
+        ...(!filterAppId ? [{
+            key: "app_name",
+            label: "Application",
+            render: (v) => <span className="text-xs text-muted-foreground">{v ?? "—"}</span>,
+        }] : []),
+        {
+            key: "created_at",
+            label: "Created",
+            render: (v) => <span className="text-xs text-muted-foreground">{new Date(v).toLocaleDateString()}</span>,
+        },
+        {
+            key: "id",
+            label: "Actions",
+            render: (_v, row) => (
+                <div className="flex items-center gap-1">
+                    {row.status !== "active" && (
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-emerald-500 hover:text-emerald-400"
+                            onClick={() => handleSetStatus(row, "active")}>
+                            <CheckCircle className="h-3 w-3" /> Activate
+                        </Button>
+                    )}
+                    {row.status !== "inactive" && (
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleSetStatus(row, "inactive")}>
+                            <XCircle className="h-3 w-3" /> Deactivate
+                        </Button>
+                    )}
+                    {row.status !== "banned" && (
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-red-500 hover:text-red-400"
+                            onClick={() => handleSetStatus(row, "banned")}>
+                            <Ban className="h-3 w-3" /> Ban
+                        </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => setDeleteDialog(row)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <Link to="/applications">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">
+                            {filterAppName ? `${decodeURIComponent(filterAppName)} — ` : ""}License Keys
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            {licenses.length} license key{licenses.length !== 1 ? "s" : ""}
+                            {filterAppName ? ` for this application` : " across all applications"}
+                        </p>
+                    </div>
+                </div>
+                <Button onClick={() => { setSelectedAppId(filterAppId ?? ""); setCreateOpen(true); }} className="gap-2">
+                    <Plus className="h-4 w-4" /> Generate Keys
+                </Button>
+            </div>
+
+            <DataTable
+                columns={columns}
+                data={licenses}
+                loading={loading}
+                emptyMessage="No license keys yet. Generate some to get started."
+            />
+
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Generate License Keys</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        {!filterAppId && (
+                            <div className="space-y-1.5">
+                                <Label>Application</Label>
+                                <Select value={selectedAppId} onValueChange={setSelectedAppId}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select application…" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {apps.map(app => (
+                                            <SelectItem key={app.id} value={app.id}>{app.app_name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        <div className="space-y-1.5">
+                            <Label>Quantity (max 100)</Label>
+                            <Input type="number" min="1" max="100" value={count} onChange={e => setCount(e.target.value)} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label>User Label <span className="text-muted-foreground">(optional)</span></Label>
+                            <Input placeholder="e.g. customer name or order ID" value={userLabel} onChange={e => setUserLabel(e.target.value)} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label>Expiry Date <span className="text-muted-foreground">(optional)</span></Label>
+                            <Input type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label>Notes <span className="text-muted-foreground">(optional)</span></Label>
+                            <Input placeholder="Internal note…" value={notes} onChange={e => setNotes(e.target.value)} />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreate} disabled={creating || !selectedAppId}>
+                            {creating ? "Generating…" : `Generate ${count > 1 ? count + " Keys" : "Key"}`}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog open={!!deleteDialog} onOpenChange={o => !o && setDeleteDialog(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete License Key?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the key <strong className="font-mono">{deleteDialog?.license_key}</strong>.
+                            This cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
+                            {deleting ? "Deleting…" : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    );
+}

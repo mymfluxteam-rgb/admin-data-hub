@@ -1,5 +1,11 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { ensureLicensingTables } from "./lib/ensureTables";
+
+await ensureLicensingTables().catch((err) => {
+    logger.error({ err }, "Failed to ensure licensing tables — continuing anyway");
+});
+
 const rawPort = process.env["PORT"];
 if (!rawPort) {
     throw new Error("PORT environment variable is required but was not provided.");

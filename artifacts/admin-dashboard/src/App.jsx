@@ -12,6 +12,8 @@ import SessionsPage from "@/pages/SessionsPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import AuditLogsPage from "@/pages/AuditLogsPage";
 import SettingsPage from "@/pages/SettingsPage";
+import ApplicationsPage from "@/pages/ApplicationsPage";
+import LicensesPage from "@/pages/LicensesPage";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import AboutPage from "@/pages/AboutPage";
@@ -45,6 +47,8 @@ function Layout() {
             <Route path="/analytics" element={<AnalyticsPage />}/>
             <Route path="/audit-logs" element={<AuditLogsPage />}/>
             <Route path="/settings" element={<SettingsPage />}/>
+            <Route path="/applications" element={<ApplicationsPage />}/>
+            <Route path="/licenses" element={<LicensesPage />}/>
             <Route path="*" element={<Navigate to="/" replace/>}/>
           </Routes>
         </div>

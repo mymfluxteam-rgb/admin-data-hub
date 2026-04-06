@@ -109,6 +109,39 @@ export const userApiKeysApi = {
     revoke: (id) => request("POST", `/api/user-api-keys/${id}/revoke`, {}),
     delete: (id) => request("DELETE", `/api/user-api-keys/${id}`),
 };
+export const applicationsApi = {
+    getAll: () => request("GET", "/api/applications").then((d) => d ?? []),
+    get: (id) => request("GET", `/api/applications/${id}`),
+    create: (payload) => request("POST", "/api/applications", payload),
+    update: (id, payload) => request("PUT", `/api/applications/${id}`, payload),
+    rotateSecret: (id) => request("POST", `/api/applications/${id}/rotate-secret`),
+    delete: async (id) => {
+        const token = localStorage.getItem("admin_jwt");
+        const res = await fetch(`/api/applications/${id}`, {
+            method: "DELETE",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        return res.ok || res.status === 204;
+    },
+};
+export const licensesApi = {
+    getAll: (appId) => {
+        const url = appId ? `/api/licenses?app_id=${encodeURIComponent(appId)}` : "/api/licenses";
+        return request("GET", url).then((d) => d ?? []);
+    },
+    get: (id) => request("GET", `/api/licenses/${id}`),
+    create: (payload) => request("POST", "/api/licenses", payload),
+    setStatus: (id, status) => request("PUT", `/api/licenses/${id}/status`, { status }),
+    update: (id, payload) => request("PUT", `/api/licenses/${id}`, payload),
+    delete: async (id) => {
+        const token = localStorage.getItem("admin_jwt");
+        const res = await fetch(`/api/licenses/${id}`, {
+            method: "DELETE",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        return res.ok || res.status === 204;
+    },
+};
 export const authApi = {
     login: async (email, password) => {
         const res = await request("POST", "/auth/login", { email, password });
