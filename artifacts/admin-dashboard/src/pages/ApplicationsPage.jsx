@@ -12,7 +12,6 @@ import {
     AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
     AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Copy, Plus, Trash2, RefreshCw, KeyRound, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -98,9 +97,9 @@ export default function ApplicationsPage() {
         {
             key: "app_name",
             label: "Application Name",
-            render: (v, row) => (
+            render: (row) => (
                 <div>
-                    <div className="font-medium text-foreground">{v}</div>
+                    <div className="font-medium text-foreground">{row.app_name}</div>
                     <div className="font-mono text-xs text-muted-foreground mt-0.5">{row.id}</div>
                 </div>
             ),
@@ -108,17 +107,17 @@ export default function ApplicationsPage() {
         {
             key: "app_secret",
             label: "App Secret",
-            render: (v) => <SecretCell secret={v} />,
+            render: (row) => <SecretCell secret={row.app_secret} />,
         },
         {
             key: "created_at",
             label: "Created",
-            render: (v) => <span className="text-xs text-muted-foreground">{new Date(v).toLocaleDateString()}</span>,
+            render: (row) => <span className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</span>,
         },
         {
             key: "id",
             label: "Actions",
-            render: (_v, row) => (
+            render: (row) => (
                 <div className="flex items-center gap-1">
                     <Link to={`/licenses?app_id=${row.id}&app_name=${encodeURIComponent(row.app_name)}`}>
                         <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
@@ -163,8 +162,7 @@ export default function ApplicationsPage() {
             <DataTable
                 columns={columns}
                 data={apps}
-                loading={loading}
-                emptyMessage="No applications yet. Create your first one."
+                isLoading={loading}
             />
 
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>

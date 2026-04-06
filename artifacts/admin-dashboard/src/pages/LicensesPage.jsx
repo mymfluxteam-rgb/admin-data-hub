@@ -124,11 +124,11 @@ export default function LicensesPage() {
         {
             key: "license_key",
             label: "License Key",
-            render: (v) => (
+            render: (row) => (
                 <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs text-foreground">{v}</span>
+                    <span className="font-mono text-xs text-foreground">{row.license_key}</span>
                     <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground"
-                        onClick={() => { navigator.clipboard.writeText(v); toast.success("Copied"); }}>
+                        onClick={() => { navigator.clipboard.writeText(row.license_key); toast.success("Copied"); }}>
                         <Copy className="h-3 w-3" />
                     </Button>
                 </div>
@@ -137,32 +137,32 @@ export default function LicensesPage() {
         {
             key: "status",
             label: "Status",
-            render: (v) => <StatusBadge status={v} />,
+            render: (row) => <StatusBadge status={row.status} />,
         },
         {
             key: "user_label",
             label: "Label",
-            render: (v) => <span className="text-xs text-muted-foreground">{v || "—"}</span>,
+            render: (row) => <span className="text-xs text-muted-foreground">{row.user_label || "—"}</span>,
         },
         {
             key: "expires_at",
             label: "Expires",
-            render: (v) => <ExpiryDisplay expires_at={v} />,
+            render: (row) => <ExpiryDisplay expires_at={row.expires_at} />,
         },
         ...(!filterAppId ? [{
             key: "app_name",
             label: "Application",
-            render: (v) => <span className="text-xs text-muted-foreground">{v ?? "—"}</span>,
+            render: (row) => <span className="text-xs text-muted-foreground">{row.app_name ?? "—"}</span>,
         }] : []),
         {
             key: "created_at",
             label: "Created",
-            render: (v) => <span className="text-xs text-muted-foreground">{new Date(v).toLocaleDateString()}</span>,
+            render: (row) => <span className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</span>,
         },
         {
             key: "id",
             label: "Actions",
-            render: (_v, row) => (
+            render: (row) => (
                 <div className="flex items-center gap-1">
                     {row.status !== "active" && (
                         <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-emerald-500 hover:text-emerald-400"
@@ -218,8 +218,7 @@ export default function LicensesPage() {
             <DataTable
                 columns={columns}
                 data={licenses}
-                loading={loading}
-                emptyMessage="No license keys yet. Generate some to get started."
+                isLoading={loading}
             />
 
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
