@@ -263,6 +263,34 @@ export default function LoginPage() {
             ← Back to landing page
           </Link>
         </div>
+
+        {/* ── DEV ONLY — remove this entire block before going live ─────────────
+             To disable: delete everything between these two comments.          */}
+        {import.meta.env.DEV && (
+          <div className="mt-5 pt-4 border-t" style={{ borderColor: "rgba(239,68,68,0.2)" }}>
+            <p className="text-center text-xs mb-3 font-mono" style={{ color: "#f87171" }}>
+              ⚠ DEV MODE ONLY
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem("admin_jwt", "dev-bypass-token");
+                toast.info("Dev bypass — skipping auth");
+                navigate("/", { replace: true });
+              }}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold font-mono transition-all duration-200 hover:bg-red-500/10 active:scale-95"
+              style={{
+                background: "transparent",
+                border: "1.5px dashed rgba(239,68,68,0.6)",
+                color: "#f87171",
+                cursor: "pointer",
+              }}
+            >
+              Dev: Bypass to Dashboard
+            </button>
+          </div>
+        )}
+        {/* ── END DEV ONLY ──────────────────────────────────────────────────── */}
       </div>
     </div>
   );

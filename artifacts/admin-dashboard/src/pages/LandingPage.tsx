@@ -574,19 +574,29 @@ export default function LandingPage() {
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm" style={{ color: "#94a3b8" }}>
           {[
-            { label: "Features", href: "#features" },
-            { label: "Pricing", href: "#pricing" },
-            { label: "Docs", href: "#" },
-            { label: "About", href: "#" },
-          ].map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="transition-colors duration-200 hover:text-white"
-            >
-              {item.label}
-            </a>
-          ))}
+            { label: "Features", href: "#features", internal: false },
+            { label: "Pricing",  href: "#pricing",  internal: false },
+            { label: "Docs",     href: "/docs",     internal: true  },
+            { label: "About",    href: "/about",    internal: true  },
+          ].map((item) =>
+            item.internal ? (
+              <Link
+                key={item.label}
+                to={item.href}
+                className="transition-colors duration-200 hover:text-white"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.label}
+                href={item.href}
+                className="transition-colors duration-200 hover:text-white"
+              >
+                {item.label}
+              </a>
+            )
+          )}
         </div>
         <div className="flex items-center gap-3">
           <Link

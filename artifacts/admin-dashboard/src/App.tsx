@@ -14,6 +14,8 @@ import AuditLogsPage from "@/pages/AuditLogsPage";
 import SettingsPage from "@/pages/SettingsPage";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
+import AboutPage from "@/pages/AboutPage";
+import DocsPage from "@/pages/DocsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +64,8 @@ export default function App() {
           <Routes>
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/docs" element={<DocsPage />} />
             <Route
               path="/*"
               element={
