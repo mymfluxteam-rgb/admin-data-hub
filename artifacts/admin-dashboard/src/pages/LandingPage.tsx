@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   Shield, Zap, Globe, Users, BarChart3, Key, CheckCircle2,
-  ArrowRight, ChevronRight, Star,
+  ArrowRight, ChevronRight, Star, Check,
 } from "lucide-react";
 
 function FloatingShape({
@@ -221,6 +221,286 @@ const TESTIMONIALS = [
   },
 ];
 
+// ─── Pricing data ─────────────────────────────────────────────────────────────
+const PLANS = [
+  {
+    name: "Tester",
+    tagline: "Perfect for testing and small projects",
+    monthlyPrice: null,
+    annualPrice: null,
+    priceLabel: "Free",
+    subLabel: "forever",
+    features: [
+      "Up to 10 licensed users",
+      "1 application",
+      "Basic HWID locking",
+      "Community support",
+      "Public API access",
+    ],
+    btnLabel: "Get Started Free",
+    btnStyle: {
+      background: "rgba(255,255,255,0.07)",
+      border: "1px solid rgba(255,255,255,0.12)",
+      color: "#e2e8f0",
+    },
+    btnHoverStyle: {
+      background: "rgba(255,255,255,0.12)",
+    },
+    popular: false,
+    accent: null,
+  },
+  {
+    name: "Developer",
+    tagline: "For indie devs shipping real products",
+    monthlyPrice: 2.99,
+    annualPrice: 14.99,
+    priceLabel: null,
+    subLabel: null,
+    features: [
+      "Unlimited licensed users",
+      "5 applications",
+      "Advanced HWID locking",
+      "Credit-based billing",
+      "Priority email support",
+    ],
+    btnLabel: "Start Developer Plan",
+    btnStyle: {
+      background: "linear-gradient(135deg, #0ea5e9, #06b6d4)",
+      color: "#fff",
+      boxShadow: "0 6px 24px rgba(6,182,212,0.4)",
+    },
+    btnHoverStyle: {
+      background: "linear-gradient(135deg, #38bdf8, #22d3ee)",
+      boxShadow: "0 8px 32px rgba(6,182,212,0.55)",
+    },
+    popular: true,
+    accent: "#06b6d4",
+  },
+  {
+    name: "Seller",
+    tagline: "For businesses, resellers, and larger projects",
+    monthlyPrice: 4.99,
+    annualPrice: 24.99,
+    priceLabel: null,
+    subLabel: null,
+    features: [
+      "Unlimited everything",
+      "Unlimited applications",
+      "White-label dashboard",
+      "Analytics & audit logs",
+      "Dedicated support + SLA",
+    ],
+    btnLabel: "Start Seller Plan",
+    btnStyle: {
+      background: "linear-gradient(135deg, #a855f7, #ec4899)",
+      color: "#fff",
+      boxShadow: "0 6px 24px rgba(168,85,247,0.4)",
+    },
+    btnHoverStyle: {
+      background: "linear-gradient(135deg, #c084fc, #f472b6)",
+      boxShadow: "0 8px 32px rgba(168,85,247,0.55)",
+    },
+    popular: false,
+    accent: "#a855f7",
+  },
+];
+
+function PricingSection() {
+  const [annual, setAnnual] = useState(false);
+  const [hoveredBtn, setHoveredBtn] = useState<number | null>(null);
+
+  return (
+    <section id="pricing" className="py-24 px-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="text-center mb-12">
+        <p className="text-sm font-semibold mb-3" style={{ color: "#a78bfa" }}>PRICING</p>
+        <h2
+          className="font-bold mb-4"
+          style={{
+            fontSize: "clamp(2rem, 4vw, 3rem)",
+            background: "linear-gradient(135deg, #f0f9ff, #94a3b8)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
+          Simple, transparent pricing
+        </h2>
+        <p className="text-base max-w-xl mx-auto mb-10" style={{ color: "#64748b" }}>
+          Start free, scale as you grow. No hidden fees, no surprises.
+        </p>
+
+        {/* Monthly / Annual toggle */}
+        <div className="inline-flex items-center gap-4">
+          <span
+            className="text-sm font-medium"
+            style={{ color: annual ? "#475569" : "#e2e8f0", transition: "color 0.2s" }}
+          >
+            Monthly
+          </span>
+
+          <button
+            onClick={() => setAnnual(!annual)}
+            className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none"
+            style={{
+              background: annual
+                ? "linear-gradient(135deg, #a855f7, #ec4899)"
+                : "rgba(255,255,255,0.12)",
+              border: "1px solid rgba(255,255,255,0.15)",
+            }}
+            aria-label="Toggle billing period"
+          >
+            <span
+              className="absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-transform duration-300"
+              style={{ transform: annual ? "translateX(28px)" : "translateX(0)" }}
+            />
+          </button>
+
+          <span
+            className="text-sm font-medium flex items-center gap-2"
+            style={{ color: annual ? "#e2e8f0" : "#475569", transition: "color 0.2s" }}
+          >
+            Annual
+            <span
+              className="text-xs font-bold px-2 py-0.5 rounded-full"
+              style={{
+                background: "linear-gradient(135deg, rgba(168,85,247,0.2), rgba(236,72,153,0.2))",
+                border: "1px solid rgba(168,85,247,0.35)",
+                color: "#c084fc",
+              }}
+            >
+              Save 50%
+            </span>
+          </span>
+        </div>
+      </div>
+
+      {/* Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+        {PLANS.map((plan, i) => {
+          const isPopular = plan.popular;
+          const price =
+            plan.priceLabel
+              ? plan.priceLabel
+              : annual
+              ? `$${plan.annualPrice}`
+              : `$${plan.monthlyPrice}`;
+          const period =
+            plan.priceLabel
+              ? plan.subLabel
+              : annual
+              ? "/ year"
+              : "/ month";
+
+          return (
+            <div
+              key={plan.name}
+              className="relative flex flex-col rounded-2xl p-7 transition-all duration-300"
+              style={{
+                background: isPopular ? "linear-gradient(160deg, #0c1e38 0%, #0a1628 100%)" : "#0a1628",
+                border: isPopular
+                  ? "1px solid rgba(6,182,212,0.45)"
+                  : "1px solid rgba(255,255,255,0.07)",
+                boxShadow: isPopular
+                  ? "0 0 40px rgba(6,182,212,0.15), 0 24px 48px rgba(0,0,0,0.5)"
+                  : "6px 6px 16px rgba(0,0,0,0.4), -3px -3px 10px rgba(255,255,255,0.03)",
+                transform: isPopular ? "scale(1.04)" : "scale(1)",
+              }}
+            >
+              {/* Popular badge */}
+              {isPopular && (
+                <div
+                  className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap"
+                  style={{
+                    background: "linear-gradient(135deg, #0ea5e9, #06b6d4)",
+                    color: "#fff",
+                    boxShadow: "0 4px 16px rgba(6,182,212,0.4)",
+                  }}
+                >
+                  ★ Most Popular
+                </div>
+              )}
+
+              {/* Plan name & tagline */}
+              <div className="mb-6">
+                <h3
+                  className="text-xl font-bold mb-1.5"
+                  style={{ color: plan.accent ?? "#f1f5f9" }}
+                >
+                  {plan.name}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: "#64748b" }}>
+                  {plan.tagline}
+                </p>
+              </div>
+
+              {/* Price */}
+              <div className="mb-8">
+                <div className="flex items-end gap-1.5">
+                  <span
+                    className="font-black leading-none"
+                    style={{
+                      fontSize: plan.priceLabel ? "2.8rem" : "3rem",
+                      color: plan.accent ?? "#f1f5f9",
+                    }}
+                  >
+                    {price}
+                  </span>
+                  {period && (
+                    <span
+                      className="text-sm mb-1.5 font-medium"
+                      style={{ color: "#475569" }}
+                    >
+                      {period}
+                    </span>
+                  )}
+                </div>
+                {!plan.priceLabel && annual && (
+                  <p className="text-xs mt-1.5" style={{ color: "#475569" }}>
+                    ~${(plan.annualPrice! / 12).toFixed(2)} / month billed annually
+                  </p>
+                )}
+              </div>
+
+              {/* Features */}
+              <ul className="space-y-3 mb-8 flex-1">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-sm" style={{ color: "#94a3b8" }}>
+                    <Check
+                      className="h-4 w-4 shrink-0 mt-0.5"
+                      style={{ color: plan.accent ?? "#34d399" }}
+                    />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA button */}
+              <Link
+                to="/login"
+                className="block text-center py-3 rounded-xl text-sm font-semibold transition-all duration-200"
+                style={{
+                  ...(hoveredBtn === i ? { ...plan.btnStyle, ...plan.btnHoverStyle } : plan.btnStyle),
+                  transform: hoveredBtn === i ? "translateY(-1px)" : "translateY(0)",
+                }}
+                onMouseEnter={() => setHoveredBtn(i)}
+                onMouseLeave={() => setHoveredBtn(null)}
+              >
+                {plan.btnLabel}
+              </Link>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Small reassurance note */}
+      <p className="text-center text-xs mt-10" style={{ color: "#334155" }}>
+        No credit card required to get started. Cancel anytime.
+      </p>
+    </section>
+  );
+}
+
 export default function LandingPage() {
   const [scrollY, setScrollY] = useState(0);
 
@@ -293,13 +573,18 @@ export default function LandingPage() {
           <span style={{ color: "#06b6d4" }}>Admin</span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm" style={{ color: "#94a3b8" }}>
-          {["Features", "Pricing", "Docs", "About"].map((item) => (
+          {[
+            { label: "Features", href: "#features" },
+            { label: "Pricing", href: "#pricing" },
+            { label: "Docs", href: "#" },
+            { label: "About", href: "#" },
+          ].map((item) => (
             <a
-              key={item}
-              href="#"
+              key={item.label}
+              href={item.href}
               className="transition-colors duration-200 hover:text-white"
             >
-              {item}
+              {item.label}
             </a>
           ))}
         </div>
@@ -658,6 +943,9 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* ─── PRICING ─── */}
+      <PricingSection />
 
       {/* ─── CTA ─── */}
       <section className="py-24 px-6">
