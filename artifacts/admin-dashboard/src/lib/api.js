@@ -142,6 +142,15 @@ export const licensesApi = {
         return res.ok || res.status === 204;
     },
 };
+export const planApi = {
+    getMyPlan: () => request("GET", "/api/me/plan").then((d) => d ?? {
+        planName: null,
+        maxApplications: null,
+        licensedUsers: null,
+        currentApplications: 0,
+        currentLicenses: 0,
+    }),
+};
 export const authApi = {
     login: async (email, password) => {
         const res = await request("POST", "/auth/login", { email, password });

@@ -15,6 +15,8 @@ import {
 import { toast } from "sonner";
 import { Copy, Plus, Trash2, RefreshCw, KeyRound, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useUserPlan } from "@/contexts/UserPlanContext";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 function SecretCell({ secret }) {
     const [visible, setVisible] = useState(false);
@@ -38,16 +40,16 @@ function SecretCell({ secret }) {
 export default function ApplicationsPage() {
     const [apps, setApps] = useState([]);
     const [loading, setLoading] = useState(true);
-
     const [createOpen, setCreateOpen] = useState(false);
+    const [upgradeOpen, setUpgradeOpen] = useState(false);
     const [appName, setAppName] = useState("");
     const [creating, setCreating] = useState(false);
-
     const [rotateApp, setRotateApp] = useState(null);
     const [rotating, setRotating] = useState(false);
-
     const [deleteApp, setDeleteApp] = useState(null);
     const [deleting, setDeleting] = useState(false);
+
+    const { plan, refreshPlan } = useUserPlan();
 
     const fetchApps = () => {
         setLoading(true);
@@ -56,16 +58,33 @@ export default function ApplicationsPage() {
 
     useEffect(() => { fetchApps(); }, []);
 
+    const handleNewAppClick = () => {
+        if (
+            plan.maxApplications != null &&
+            plan.currentApplications >= plan.maxApplications
+        ) {
+            setUpgradeOpen(true);
+            return;
+        }
+        setCreateOpen(true);
+    };
+
     const handleCreate = async () => {
         if (!appName.trim()) return;
         setCreating(true);
         const result = await applicationsApi.create({ app_name: appName.trim() });
         setCreating(false);
         if (result) {
+            if (result.code === "PLAN_LIMIT_REACHED") {
+                setCreateOpen(false);
+                setUpgradeOpen(true);
+                return;
+            }
             toast.success(`Application "${result.app_name}" created`);
             setCreateOpen(false);
             setAppName("");
             fetchApps();
+            refreshPlan();
         }
     };
 
@@ -90,6 +109,7 @@ export default function ApplicationsPage() {
             toast.success(`Application "${deleteApp.app_name}" deleted`);
             setDeleteApp(null);
             fetchApps();
+            refreshPlan();
         }
     };
 
@@ -137,6 +157,8 @@ export default function ApplicationsPage() {
         },
     ];
 
+    const atLimit = plan.maxApplications != null && plan.currentApplications >= plan.maxApplications;
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -144,9 +166,18 @@ export default function ApplicationsPage() {
                     <h1 className="text-2xl font-bold text-foreground">Applications</h1>
                     <p className="text-sm text-muted-foreground mt-1">
                         Manage licensing applications. Each app has a unique ID and secret for API verification.
+                        {plan.maxApplications != null && (
+                            <span className="ml-2 text-xs font-medium">
+                                ({plan.currentApplications}/{plan.maxApplications} used)
+                            </span>
+                        )}
                     </p>
                 </div>
-                <Button onClick={() => setCreateOpen(true)} className="gap-2">
+                <Button
+                    onClick={handleNewAppClick}
+                    className="gap-2"
+                    variant={atLimit ? "outline" : "default"}
+                >
                     <Plus className="h-4 w-4" /> New Application
                 </Button>
             </div>
@@ -229,6 +260,12 @@ export default function ApplicationsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <UpgradeModal
+                open={upgradeOpen}
+                onClose={() => setUpgradeOpen(false)}
+                featureName="New Application"
+            />
         </div>
     );
 }

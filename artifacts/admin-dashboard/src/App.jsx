@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { UserPlanProvider } from "@/contexts/UserPlanContext";
 import { Sidebar } from "@/components/Sidebar";
 import Dashboard from "@/pages/Dashboard";
 import UsersPage from "@/pages/UsersPage";
@@ -19,6 +20,7 @@ import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import AboutPage from "@/pages/AboutPage";
 import DocsPage from "@/pages/DocsPage";
+
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -27,12 +29,14 @@ const queryClient = new QueryClient({
         },
     },
 });
+
 function RequireAuth({ children }) {
     const token = localStorage.getItem("admin_jwt");
     if (!token)
         return <Navigate to="/login" replace/>;
     return <>{children}</>;
 }
+
 function Layout() {
     return (<div className="flex min-h-screen bg-background">
       <Sidebar />
@@ -57,6 +61,7 @@ function Layout() {
       </main>
     </div>);
 }
+
 export default function App() {
     return (<QueryClientProvider client={queryClient}>
       <LanguageProvider>
@@ -66,9 +71,13 @@ export default function App() {
             <Route path="/login" element={<LoginPage />}/>
             <Route path="/about" element={<AboutPage />}/>
             <Route path="/docs" element={<DocsPage />}/>
-            <Route path="/*" element={<RequireAuth>
-                  <Layout />
-                </RequireAuth>}/>
+            <Route path="/*" element={
+                <RequireAuth>
+                    <UserPlanProvider>
+                        <Layout />
+                    </UserPlanProvider>
+                </RequireAuth>
+            }/>
           </Routes>
           <Toaster position="top-right" richColors closeButton/>
         </BrowserRouter>

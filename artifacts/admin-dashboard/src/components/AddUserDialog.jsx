@@ -6,10 +6,28 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { usersApi } from "@/lib/api";
+import { useUserPlan } from "@/contexts/UserPlanContext";
+import { UpgradeModal } from "@/components/UpgradeModal";
+
 export function AddUserDialog() {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [upgradeOpen, setUpgradeOpen] = useState(false);
     const [form, setForm] = useState({ username: "", email: "", role: "user" });
+    const { plan, refreshPlan } = useUserPlan();
+
+    const handleTriggerClick = () => {
+        if (
+            plan.licensedUsers != null &&
+            plan.currentLicenses >= plan.licensedUsers &&
+            plan.planName?.toLowerCase() !== "seller"
+        ) {
+            setUpgradeOpen(true);
+            return;
+        }
+        setOpen(true);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -19,38 +37,56 @@ export function AddUserDialog() {
             toast.success(`User ${form.username} created successfully`);
             setOpen(false);
             setForm({ username: "", email: "", role: "user" });
+            refreshPlan();
         }
     };
-    return (<Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
-          <UserPlus className="h-3.5 w-3.5"/>
-          Add User
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
-          <DialogDescription>Create a new user in Supabase.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input id="username" value={form.username} onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))} placeholder="johndoe" required/>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="john@example.com" required/>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Input id="role" value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))} placeholder="user"/>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create User"}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>);
+
+    return (
+        <>
+            <Button variant="outline" size="sm" className="gap-2 h-8 text-xs" onClick={handleTriggerClick}>
+                <UserPlus className="h-3.5 w-3.5"/>
+                Add User
+            </Button>
+
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New User</DialogTitle>
+                        <DialogDescription>
+                            Create a new user in Supabase.
+                            {plan.licensedUsers != null && (
+                                <span className="block mt-1 text-xs text-muted-foreground">
+                                    {plan.currentLicenses} / {plan.licensedUsers} licensed users used.
+                                </span>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="username">Username</Label>
+                            <Input id="username" value={form.username} onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))} placeholder="johndoe" required/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="john@example.com" required/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="role">Role</Label>
+                            <Input id="role" value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))} placeholder="user"/>
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+                            <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create User"}</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <UpgradeModal
+                open={upgradeOpen}
+                onClose={() => setUpgradeOpen(false)}
+                featureName="Add User"
+            />
+        </>
+    );
 }

@@ -19,6 +19,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Copy, Plus, Trash2, ArrowLeft, Ban, CheckCircle, XCircle } from "lucide-react";
+import { useUserPlan } from "@/contexts/UserPlanContext";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const STATUS_COLORS = {
     active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -65,6 +67,9 @@ export default function LicensesPage() {
     const [statusDialog, setStatusDialog] = useState(null);
     const [deleteDialog, setDeleteDialog] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+    const { plan, refreshPlan } = useUserPlan();
 
     const fetchLicenses = () => {
         setLoading(true);
@@ -75,6 +80,18 @@ export default function LicensesPage() {
         fetchLicenses();
         applicationsApi.getAll().then(setApps);
     }, [filterAppId]);
+
+    const handleGenerateClick = () => {
+        if (
+            plan.licensedUsers != null &&
+            plan.currentLicenses >= plan.licensedUsers
+        ) {
+            setUpgradeOpen(true);
+            return;
+        }
+        setSelectedAppId(filterAppId ?? "");
+        setCreateOpen(true);
+    };
 
     const handleCreate = async () => {
         if (!selectedAppId) return;
@@ -88,6 +105,11 @@ export default function LicensesPage() {
         });
         setCreating(false);
         if (result) {
+            if (result.code === "PLAN_LIMIT_REACHED") {
+                setCreateOpen(false);
+                setUpgradeOpen(true);
+                return;
+            }
             const n = Array.isArray(result) ? result.length : 1;
             toast.success(`${n} license key${n !== 1 ? "s" : ""} created`);
             setCreateOpen(false);
@@ -96,6 +118,7 @@ export default function LicensesPage() {
             setExpiresAt("");
             setCount("1");
             fetchLicenses();
+            refreshPlan();
         }
     };
 
@@ -210,8 +233,11 @@ export default function LicensesPage() {
                         </p>
                     </div>
                 </div>
-                <Button onClick={() => { setSelectedAppId(filterAppId ?? ""); setCreateOpen(true); }} className="gap-2">
+                <Button onClick={handleGenerateClick} className="gap-2">
                     <Plus className="h-4 w-4" /> Generate Keys
+                    {plan.licensedUsers != null && (
+                        <span className="text-xs opacity-70">({plan.currentLicenses}/{plan.licensedUsers})</span>
+                    )}
                 </Button>
             </div>
 
@@ -285,6 +311,12 @@ export default function LicensesPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <UpgradeModal
+                open={upgradeOpen}
+                onClose={() => setUpgradeOpen(false)}
+                featureName="Generate License Keys"
+            />
         </div>
     );
 }
