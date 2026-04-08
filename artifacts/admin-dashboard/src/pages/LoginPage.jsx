@@ -29,7 +29,7 @@ export default function LoginPage() {
             if (event === "SIGNED_IN" && session?.access_token) {
                 localStorage.setItem("admin_jwt", session.access_token);
                 toast.success("Signed in successfully");
-                navigate("/", { replace: true });
+                navigate("/dashboard", { replace: true });
             }
         });
         return () => subscription.unsubscribe();
@@ -38,7 +38,7 @@ export default function LoginPage() {
     // If already logged in, skip to dashboard
     useEffect(() => {
         if (localStorage.getItem("admin_jwt"))
-            navigate("/", { replace: true });
+            navigate("/dashboard", { replace: true });
     }, [navigate]);
 
     async function handleLogin(e) {
@@ -48,7 +48,7 @@ export default function LoginPage() {
             const res = await authApi.login(email, password);
             if (res) {
                 toast.success("Signed in successfully");
-                navigate("/", { replace: true });
+                navigate("/dashboard", { replace: true });
             }
         }
         finally {
@@ -199,7 +199,7 @@ export default function LoginPage() {
             <button type="button" onClick={() => {
                 localStorage.setItem("admin_jwt", "dev-bypass-token");
                 toast.info("Dev bypass — skipping auth");
-                navigate("/", { replace: true });
+                navigate("/dashboard", { replace: true });
             }} className="w-full py-2.5 rounded-xl text-sm font-semibold font-mono transition-all duration-200 hover:bg-red-500/10 active:scale-95" style={{
                 background: "transparent",
                 border: "1.5px dashed rgba(239,68,68,0.6)",

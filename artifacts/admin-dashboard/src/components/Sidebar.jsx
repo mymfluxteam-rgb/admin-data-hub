@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserPlan } from "@/contexts/UserPlanContext";
 
 const NAV_ITEMS = [
-    { href: "/", icon: LayoutDashboard, key: "nav.dashboard" },
+    { href: "/dashboard", icon: LayoutDashboard, key: "nav.dashboard" },
     { href: "/applications", icon: AppWindow, key: "nav.applications" },
     { href: "/licenses", icon: KeyRound, key: "nav.licenses" },
     { href: "/sdk", icon: Code2, key: "nav.sdk" },

@@ -43,7 +43,8 @@ function Layout() {
       <main className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6">
           <Routes>
-            <Route path="/" element={<Dashboard />}/>
+            <Route path="/" element={<Navigate to="/dashboard" replace/>}/>
+            <Route path="/dashboard" element={<Dashboard />}/>
             <Route path="/users" element={<UsersPage />}/>
             <Route path="/credits" element={<CreditsPage />}/>
             <Route path="/transactions" element={<TransactionsPage />}/>
@@ -55,7 +56,7 @@ function Layout() {
             <Route path="/applications" element={<ApplicationsPage />}/>
             <Route path="/licenses" element={<LicensesPage />}/>
             <Route path="/sdk" element={<SdkPage />}/>
-            <Route path="*" element={<Navigate to="/" replace/>}/>
+            <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
           </Routes>
         </div>
       </main>
