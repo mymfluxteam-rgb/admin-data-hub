@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { authApi } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 function GoogleIcon() {
     return (<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -21,31 +22,25 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [oauthLoading, setOauthLoading] = useState(null);
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    // Handle OAuth redirect-back (token or error in URL)
+
+    // Listen for Supabase OAuth session after redirect-back
     useEffect(() => {
-        const oauthToken = searchParams.get("oauth_token");
-        const oauthError = searchParams.get("oauth_error");
-        if (oauthToken) {
-            localStorage.setItem("admin_jwt", oauthToken);
-            toast.success("Signed in successfully");
-            navigate("/", { replace: true });
-            return;
-        }
-        if (oauthError) {
-            const msg = oauthError === "state_mismatch"
-                ? "OAuth session expired. Please try again."
-                : oauthError === "missing_code"
-                    ? "Authentication was cancelled."
-                    : `OAuth error: ${oauthError}`;
-            toast.error(msg);
-        }
-    }, [searchParams, navigate]);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === "SIGNED_IN" && session?.access_token) {
+                localStorage.setItem("admin_jwt", session.access_token);
+                toast.success("Signed in successfully");
+                navigate("/", { replace: true });
+            }
+        });
+        return () => subscription.unsubscribe();
+    }, [navigate]);
+
     // If already logged in, skip to dashboard
     useEffect(() => {
         if (localStorage.getItem("admin_jwt"))
             navigate("/", { replace: true });
     }, [navigate]);
+
     async function handleLogin(e) {
         e.preventDefault();
         setLoading(true);
@@ -60,9 +55,19 @@ export default function LoginPage() {
             setLoading(false);
         }
     }
-    function handleOAuth(provider) {
+
+    async function handleOAuth(provider) {
         setOauthLoading(provider);
-        window.location.href = `/auth/${provider}`;
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider,
+            options: {
+                redirectTo: window.location.origin,
+            },
+        });
+        if (error) {
+            toast.error(error.message ?? "OAuth sign-in failed");
+            setOauthLoading(null);
+        }
     }
     return (<div className="min-h-screen flex items-center justify-center px-4" style={{ background: "#050d1a", fontFamily: "'Inter', system-ui, sans-serif" }}>
       <style>{`

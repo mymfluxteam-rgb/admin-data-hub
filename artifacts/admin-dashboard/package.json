@@ -73,6 +73,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.100.1",
     "@types/react-syntax-highlighter": "^15.5.13",
     "axios": "^1.14.0",
     "react-router-dom": "^7.13.2",
