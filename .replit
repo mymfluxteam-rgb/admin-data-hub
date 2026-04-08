@@ -86,8 +86,8 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
-VITE_SUPABASE_URL = "https://fnaoiwozpokopecztleu.supabase.co"
-VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZuYW9pd296cG9rb3BlY3p0bGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3ODAzNDUsImV4cCI6MjA5MDM1NjM0NX0.BBqNx1QRl5UzwR9zNrBXoUm5xbnDcQBuCkWdA4rU6OQ"
+VITE_SUPABASE_URL = "https://ecfikruopdivgzqxccwd.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjZmlrcnVvcGRpdmd6cXhjY3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzIxMzgsImV4cCI6MjA5MDY0ODEzOH0.6vfPhxGbFcbJZnuLqxnFZ0Gd7HjEjJgv8S9jVeJ-PGs"
 VITE_API_URL = "http://localhost:5000"
 
 [nix]
