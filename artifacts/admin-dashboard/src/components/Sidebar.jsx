@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CreditCard, Cpu, BarChart3, ScrollText, Settings, ArrowLeftRight, MonitorSmartphone, AppWindow, KeyRound, Code2, Lock } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Cpu, BarChart3, ScrollText, Settings, ArrowLeftRight, MonitorSmartphone, AppWindow, KeyRound, Code2, Lock, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserPlan } from "@/contexts/UserPlanContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NAV_ITEMS = [
     { href: "/dashboard", icon: LayoutDashboard, key: "nav.dashboard" },
@@ -23,6 +24,12 @@ export function Sidebar() {
     const location = useLocation();
     const { t } = useLanguage();
     const { plan } = useUserPlan();
+    const { user, signOut } = useAuth();
+
+    const meta = user?.user_metadata ?? {};
+    const name = meta.full_name || meta.name || user?.email?.split("@")[0] || "User";
+    const avatarUrl = meta.avatar_url || meta.picture || null;
+    const initials = name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
     const isSeller = plan.planName?.toLowerCase() === "seller";
 
@@ -63,22 +70,41 @@ export function Sidebar() {
         })}
       </nav>
 
-      {plan.planName && (
-          <div className="px-3 py-3 border-t border-sidebar-border">
-              <div className="text-xs text-muted-foreground">
-                  Plan: <span className="font-medium text-foreground">{plan.planName}</span>
-              </div>
-              {plan.maxApplications != null && (
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                      Apps: {plan.currentApplications}/{plan.maxApplications}
-                  </div>
-              )}
-              {plan.licensedUsers != null && (
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                      Licenses: {plan.currentLicenses}/{plan.licensedUsers}
-                  </div>
-              )}
-          </div>
-      )}
+      <div className="border-t border-sidebar-border">
+        {plan.planName && (
+            <div className="px-3 pt-3 pb-1">
+                <div className="text-xs text-muted-foreground">
+                    Plan: <span className="font-medium text-foreground">{plan.planName}</span>
+                </div>
+                {plan.maxApplications != null && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                        Apps: {plan.currentApplications}/{plan.maxApplications}
+                    </div>
+                )}
+                {plan.licensedUsers != null && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                        Licenses: {plan.currentLicenses}/{plan.licensedUsers}
+                    </div>
+                )}
+            </div>
+        )}
+        <div className="flex items-center gap-2 px-3 py-2.5">
+            {avatarUrl ? (
+                <img src={avatarUrl} alt={name} className="h-7 w-7 rounded-full object-cover ring-1 ring-primary/30 shrink-0"/>
+            ) : (
+                <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold" style={{ background: "linear-gradient(135deg, #0ea5e9, #06b6d4)", color: "#fff" }}>
+                    {initials}
+                </div>
+            )}
+            <span className="flex-1 text-xs text-muted-foreground truncate">{name}</span>
+            <button
+                onClick={signOut}
+                title="Logout"
+                className="h-6 w-6 flex items-center justify-center rounded-md transition-colors hover:bg-red-500/10 hover:text-red-400 text-muted-foreground shrink-0"
+            >
+                <LogOut className="h-3.5 w-3.5"/>
+            </button>
+        </div>
+      </div>
     </aside>);
 }

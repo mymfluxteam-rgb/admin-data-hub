@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { UserPlanProvider } from "@/contexts/UserPlanContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
 import Dashboard from "@/pages/Dashboard";
 import UsersPage from "@/pages/UsersPage";
@@ -31,9 +32,15 @@ const queryClient = new QueryClient({
 });
 
 function RequireAuth({ children }) {
-    const token = localStorage.getItem("admin_jwt");
-    if (!token)
-        return <Navigate to="/login" replace/>;
+    const { user, loading } = useAuth();
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center" style={{ background: "#050d1a" }}>
+                <div className="h-8 w-8 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin"/>
+            </div>
+        );
+    }
+    if (!user) return <Navigate to="/login" replace/>;
     return <>{children}</>;
 }
 
@@ -67,20 +74,22 @@ export default function App() {
     return (<QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <BrowserRouter basename={import.meta.env.BASE_URL}>
-          <Routes>
-            <Route path="/landing" element={<LandingPage />}/>
-            <Route path="/login" element={<LoginPage />}/>
-            <Route path="/about" element={<AboutPage />}/>
-            <Route path="/docs" element={<DocsPage />}/>
-            <Route path="/*" element={
-                <RequireAuth>
-                    <UserPlanProvider>
-                        <Layout />
-                    </UserPlanProvider>
-                </RequireAuth>
-            }/>
-          </Routes>
-          <Toaster position="top-right" richColors closeButton/>
+          <AuthProvider>
+            <Routes>
+              <Route path="/landing" element={<LandingPage />}/>
+              <Route path="/login" element={<LoginPage />}/>
+              <Route path="/about" element={<AboutPage />}/>
+              <Route path="/docs" element={<DocsPage />}/>
+              <Route path="/*" element={
+                  <RequireAuth>
+                      <UserPlanProvider>
+                          <Layout />
+                      </UserPlanProvider>
+                  </RequireAuth>
+              }/>
+            </Routes>
+            <Toaster position="top-right" richColors closeButton/>
+          </AuthProvider>
         </BrowserRouter>
       </LanguageProvider>
     </QueryClientProvider>);
