@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { randomBytes } from "crypto";
 import { supabase } from "../lib/supabase";
+import { requireAdmin } from "../middlewares/requireAdmin";
 const router = Router();
 router.get("/", async (_req, res) => {
     const { data, error } = await supabase.from("users").select("*").order("created_at", { ascending: false });
@@ -306,6 +307,49 @@ router.delete("/:id", async (req, res) => {
     });
     res.status(204).send();
 });
+router.put("/:id/plan", requireAdmin, async (req, res) => {
+    const { plan_id, plan_name } = req.body;
+
+    let targetPlanId = plan_id;
+    if (!targetPlanId && plan_name) {
+        const { data: plan, error: planErr } = await supabase
+            .from("plans")
+            .select("id, plan_name")
+            .eq("plan_name", plan_name)
+            .single();
+        if (planErr || !plan) {
+            res.status(400).json({ message: "Plan not found" });
+            return;
+        }
+        targetPlanId = plan.id;
+    }
+    if (!targetPlanId) {
+        res.status(400).json({ message: "plan_id or plan_name is required" });
+        return;
+    }
+
+    const { data, error } = await supabase
+        .from("users")
+        .update({ plan_id: targetPlanId })
+        .eq("id", req.params["id"])
+        .select("id, username, email, role, plan_id, plans(plan_name)")
+        .single();
+
+    if (error) {
+        res.status(500).json({ message: error.message });
+        return;
+    }
+
+    await supabase.from("audit_logs").insert({
+        action: "user.plan_change",
+        actor: req.user.email,
+        target: req.params["id"],
+        details: `Plan upgraded to: ${plan_name ?? targetPlanId}`,
+    });
+
+    res.json(data);
+});
+
 router.get("/verify-api-key", async (req, res) => {
     const key = req.query["key"];
     if (!key || key.trim().length < 8) {

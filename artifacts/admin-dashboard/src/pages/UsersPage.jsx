@@ -1,14 +1,29 @@
 import { useEffect, useState } from "react";
-import { usersApi } from "@/lib/api";
+import { usersApi, plansApi } from "@/lib/api";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, } from "@/components/ui/dialog";
-import { Ban, ShieldCheck, Eye, KeyRound, CalendarClock, RefreshCw, Copy, Clock, Trash2, AlertTriangle, UserPlus, EyeOff, CircleCheck } from "lucide-react";
+import { Ban, ShieldCheck, Eye, KeyRound, CalendarClock, RefreshCw, Copy, Clock, Trash2, AlertTriangle, UserPlus, EyeOff, CircleCheck, CreditCard } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+
+const PLAN_COLORS = {
+    Tester:    { bg: "rgba(100,116,139,0.15)", text: "#94a3b8" },
+    Developer: { bg: "rgba(14,165,233,0.15)",  text: "#38bdf8" },
+    Seller:    { bg: "rgba(168,85,247,0.15)",  text: "#c084fc" },
+};
+
+function PlanBadge({ planName }) {
+    const color = PLAN_COLORS[planName] ?? { bg: "rgba(100,116,139,0.15)", text: "#94a3b8" };
+    return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" style={{ background: color.bg, color: color.text }}>
+            {planName ?? "—"}
+        </span>
+    );
+}
 function ExpiryBadge({ expiry }) {
     if (!expiry)
         return <span className="text-xs text-muted-foreground">—</span>;
@@ -57,6 +72,10 @@ export default function UsersPage() {
     const [tempPassword, setTempPassword] = useState(null);
     const [deleteUser, setDeleteUser] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [planUser, setPlanUser] = useState(null);
+    const [plans, setPlans] = useState([]);
+    const [selectedPlanId, setSelectedPlanId] = useState("");
+    const [planChanging, setPlanChanging] = useState(false);
     // Add user dialog
     const [addOpen, setAddOpen] = useState(false);
     const [addUsername, setAddUsername] = useState("");
@@ -69,7 +88,28 @@ export default function UsersPage() {
         setLoading(true);
         usersApi.getAll().then(setUsers).finally(() => setLoading(false));
     };
-    useEffect(() => { fetchUsers(); }, []);
+    useEffect(() => {
+        fetchUsers();
+        plansApi.getAll().then(setPlans);
+    }, []);
+
+    const openPlanDialog = (user) => {
+        setPlanUser(user);
+        setSelectedPlanId(user.plan_id ?? "");
+    };
+
+    const handleChangePlan = async () => {
+        if (!planUser || !selectedPlanId) return;
+        setPlanChanging(true);
+        const result = await usersApi.changePlan(planUser.id, selectedPlanId);
+        setPlanChanging(false);
+        if (result) {
+            const planName = plans.find((p) => p.id === selectedPlanId)?.plan_name ?? "new plan";
+            toast.success(`Plan updated to ${planName} for ${planUser.username}`);
+            setPlanUser(null);
+            fetchUsers();
+        }
+    };
     const handleBanToggle = async (user) => {
         const ok = user.status === "banned"
             ? await usersApi.unban(user.id)
@@ -157,6 +197,18 @@ export default function UsersPage() {
         { key: "status", label: "Status", render: (u) => <StatusBadge status={u.status}/> },
         { key: "verified", label: "Verified", render: (u) => <StatusBadge status={u.verified ? "verified" : "unverified"}/> },
         { key: "role", label: "Role", render: (u) => <span className="text-xs text-muted-foreground capitalize">{u.role}</span> },
+        {
+            key: "plan_id", label: "Plan",
+            render: (u) => {
+                const planName = plans.find((p) => p.id === u.plan_id)?.plan_name;
+                return (
+                    <button onClick={() => openPlanDialog(u)} title="Change plan" className="flex items-center gap-1.5 group">
+                        <PlanBadge planName={planName} />
+                        <CreditCard className="h-3 w-3 text-muted-foreground/40 group-hover:text-primary transition-colors"/>
+                    </button>
+                );
+            },
+        },
         { key: "credits", label: "Credits", render: (u) => <span className="font-mono">{(u.credits ?? 0).toLocaleString()}</span> },
         { key: "account_expiry", label: "Expiry", render: (u) => <ExpiryBadge expiry={u.account_expiry}/> },
         {
@@ -363,6 +415,49 @@ export default function UsersPage() {
                 <Button size="sm" onClick={handleResetPassword}>Reset Password</Button>
               </DialogFooter>
             </div>)}
+        </DialogContent>
+      </Dialog>
+
+      {/* Plan Change Dialog */}
+      <Dialog open={!!planUser} onOpenChange={(o) => !o && setPlanUser(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-primary"/> Change Plan
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            <p className="text-sm text-muted-foreground">
+              Upgrading plan for <span className="font-mono text-foreground">{planUser?.username}</span>.
+              Only admins can perform this action.
+            </p>
+            <div className="space-y-1.5">
+              <Label>Select Plan</Label>
+              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a plan…"/>
+                </SelectTrigger>
+                <SelectContent>
+                  {plans.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                          <span className="flex items-center gap-2">
+                              <PlanBadge planName={p.plan_name}/>
+                              {p.max_applications != null
+                                  ? `— ${p.max_applications} apps, ${p.licensed_users} licenses`
+                                  : "— Unlimited"}
+                          </span>
+                      </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setPlanUser(null)}>Cancel</Button>
+            <Button size="sm" onClick={handleChangePlan} disabled={planChanging || !selectedPlanId}>
+                {planChanging ? "Saving…" : "Save Plan"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>);

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { plansApi } from "@/lib/api";
 
 const AuthContext = createContext(null);
 
@@ -26,6 +27,7 @@ export function AuthProvider({ children }) {
                 localStorage.setItem("admin_jwt", session.access_token);
                 setUser(session.user);
                 if (event === "SIGNED_IN") {
+                    plansApi.provision().catch(() => {});
                     navigate("/dashboard", { replace: true });
                 }
             } else {

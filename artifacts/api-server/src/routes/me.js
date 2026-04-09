@@ -4,6 +4,62 @@ import { pool } from "@workspace/db";
 
 const router = Router();
 
+router.post("/provision", async (req, res) => {
+    const { id: userId, email } = req.user;
+
+    const { data: existing } = await supabase
+        .from("users")
+        .select("id, plan_id, role")
+        .eq("id", userId)
+        .maybeSingle();
+
+    if (existing) {
+        res.json({ provisioned: false, user: existing });
+        return;
+    }
+
+    const { data: testerPlan, error: planErr } = await supabase
+        .from("plans")
+        .select("id")
+        .eq("plan_name", "Tester")
+        .single();
+
+    if (planErr || !testerPlan) {
+        res.status(500).json({ message: "Tester plan not found — please run the SQL migration in Supabase" });
+        return;
+    }
+
+    const username = email.split("@")[0];
+    const { data: newUser, error: insertErr } = await supabase
+        .from("users")
+        .insert({
+            id: userId,
+            email,
+            username,
+            role: "user",
+            status: "active",
+            verified: true,
+            credits: 0,
+            plan_id: testerPlan.id,
+        })
+        .select()
+        .single();
+
+    if (insertErr) {
+        res.status(500).json({ message: insertErr.message });
+        return;
+    }
+
+    await supabase.from("audit_logs").insert({
+        action: "user.provision",
+        actor: email,
+        target: userId,
+        details: `New OAuth user provisioned with Tester plan`,
+    });
+
+    res.status(201).json({ provisioned: true, user: newUser });
+});
+
 router.get("/plan", async (req, res) => {
     const userId = req.user.id;
 

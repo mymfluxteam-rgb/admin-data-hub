@@ -55,6 +55,12 @@ export const usersApi = {
     revokeApiKey: (id) => request("DELETE", `/api/users/${id}/api-key`),
     verifyApiKey: (key) => request("GET", `/api/users/verify-api-key?key=${encodeURIComponent(key)}`),
     deleteUser: (id) => request("DELETE", `/api/users/${id}`),
+    changePlan: (id, plan_id) => request("PUT", `/api/users/${id}/plan`, { plan_id }),
+};
+
+export const plansApi = {
+    getAll: () => request("GET", "/api/plans").then((d) => d ?? []),
+    provision: () => request("POST", "/api/me/provision"),
 };
 export const transactionsApi = {
     getAll: () => request("GET", "/api/transactions").then((d) => d ?? []),
