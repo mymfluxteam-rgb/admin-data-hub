@@ -13,29 +13,10 @@ import {
     AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Copy, Plus, Trash2, RefreshCw, KeyRound, Eye, EyeOff } from "lucide-react";
+import { Plus, Trash2, KeyRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUserPlan } from "@/contexts/UserPlanContext";
 import { UpgradeModal } from "@/components/UpgradeModal";
-
-function SecretCell({ secret }) {
-    const [visible, setVisible] = useState(false);
-    return (
-        <div className="flex items-center gap-1.5">
-            <span className="font-mono text-xs text-muted-foreground">
-                {visible ? secret : `${secret.slice(0, 8)}${"•".repeat(16)}`}
-            </span>
-            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground"
-                onClick={() => setVisible(v => !v)}>
-                {visible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-            </Button>
-            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground"
-                onClick={() => { navigator.clipboard.writeText(secret); toast.success("Secret copied"); }}>
-                <Copy className="h-3 w-3" />
-            </Button>
-        </div>
-    );
-}
 
 export default function ApplicationsPage() {
     const [apps, setApps] = useState([]);
@@ -44,8 +25,6 @@ export default function ApplicationsPage() {
     const [upgradeOpen, setUpgradeOpen] = useState(false);
     const [appName, setAppName] = useState("");
     const [creating, setCreating] = useState(false);
-    const [rotateApp, setRotateApp] = useState(null);
-    const [rotating, setRotating] = useState(false);
     const [deleteApp, setDeleteApp] = useState(null);
     const [deleting, setDeleting] = useState(false);
 
@@ -72,7 +51,7 @@ export default function ApplicationsPage() {
     const handleCreate = async () => {
         if (!appName.trim()) return;
         setCreating(true);
-        const result = await applicationsApi.create({ app_name: appName.trim() });
+        const result = await applicationsApi.create({ name: appName.trim() });
         setCreating(false);
         if (result) {
             if (result.code === "PLAN_LIMIT_REACHED") {
@@ -80,23 +59,11 @@ export default function ApplicationsPage() {
                 setUpgradeOpen(true);
                 return;
             }
-            toast.success(`Application "${result.app_name}" created`);
+            toast.success(`Application "${result.name}" created`);
             setCreateOpen(false);
             setAppName("");
             fetchApps();
             refreshPlan();
-        }
-    };
-
-    const handleRotate = async () => {
-        if (!rotateApp) return;
-        setRotating(true);
-        const result = await applicationsApi.rotateSecret(rotateApp.id);
-        setRotating(false);
-        if (result) {
-            toast.success("Secret rotated successfully");
-            setRotateApp(null);
-            fetchApps();
         }
     };
 
@@ -106,7 +73,7 @@ export default function ApplicationsPage() {
         const ok = await applicationsApi.delete(deleteApp.id);
         setDeleting(false);
         if (ok !== false) {
-            toast.success(`Application "${deleteApp.app_name}" deleted`);
+            toast.success(`Application "${deleteApp.name}" deleted`);
             setDeleteApp(null);
             fetchApps();
             refreshPlan();
@@ -115,41 +82,40 @@ export default function ApplicationsPage() {
 
     const columns = [
         {
-            key: "app_name",
+            key: "name",
             label: "Application Name",
             render: (row) => (
                 <div>
-                    <div className="font-medium text-foreground">{row.app_name}</div>
+                    <div className="font-medium text-foreground">{row.name}</div>
                     <div className="font-mono text-xs text-muted-foreground mt-0.5">{row.id}</div>
                 </div>
             ),
         },
         {
-            key: "app_secret",
-            label: "App Secret",
-            render: (row) => <SecretCell secret={row.app_secret} />,
-        },
-        {
             key: "created_at",
             label: "Created",
-            render: (row) => <span className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</span>,
+            render: (row) => (
+                <span className="text-xs text-muted-foreground">
+                    {row.created_at ? new Date(row.created_at).toLocaleDateString() : "—"}
+                </span>
+            ),
         },
         {
             key: "id",
             label: "Actions",
             render: (row) => (
                 <div className="flex items-center gap-1">
-                    <Link to={`/licenses?app_id=${row.id}&app_name=${encodeURIComponent(row.app_name)}`}>
+                    <Link to={`/licenses?app_id=${row.id}&app_name=${encodeURIComponent(row.name)}`}>
                         <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
                             <KeyRound className="h-3 w-3" /> Keys
                         </Button>
                     </Link>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-yellow-500 hover:text-yellow-400"
-                        onClick={() => setRotateApp(row)}>
-                        <RefreshCw className="h-3 w-3" /> Rotate
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteApp(row)}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => setDeleteApp(row)}
+                    >
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                 </div>
@@ -165,7 +131,7 @@ export default function ApplicationsPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">Applications</h1>
                     <p className="text-sm text-muted-foreground mt-1">
-                        Manage licensing applications. Each app has a unique ID and secret for API verification.
+                        Manage your licensing applications. Each app gets a unique ID for license key assignment.
                         {plan.maxApplications != null && (
                             <span className="ml-2 text-xs font-medium">
                                 ({plan.currentApplications}/{plan.maxApplications} used)
@@ -183,10 +149,10 @@ export default function ApplicationsPage() {
             </div>
 
             <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground">Public Verify Endpoint</p>
+                <p className="font-medium text-foreground">License Verification Endpoint</p>
                 <p>External clients (C#, Python, etc.) can verify licenses via:</p>
                 <code className="block bg-muted rounded px-3 py-2 mt-2 text-xs font-mono text-foreground select-all">
-                    POST /api/v1/verify — body: {`{ "app_id": "...", "app_secret": "...", "license_key": "..." }`}
+                    POST /api/v1/verify — body: {`{ "app_id": "...", "license_key": "..." }`}
                 </code>
             </div>
 
@@ -213,7 +179,7 @@ export default function ApplicationsPage() {
                             />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            An App ID (UUID) and App Secret will be auto-generated.
+                            A unique App ID (UUID) will be auto-generated. Use it when assigning license keys.
                         </p>
                     </div>
                     <DialogFooter>
@@ -225,36 +191,22 @@ export default function ApplicationsPage() {
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={!!rotateApp} onOpenChange={o => !o && setRotateApp(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Rotate App Secret?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will generate a new secret for <strong>{rotateApp?.app_name}</strong>. Any clients
-                            using the old secret will immediately stop working until updated.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleRotate} disabled={rotating} className="bg-yellow-600 hover:bg-yellow-700">
-                            {rotating ? "Rotating…" : "Rotate Secret"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             <AlertDialog open={!!deleteApp} onOpenChange={o => !o && setDeleteApp(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Application?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete <strong>{deleteApp?.app_name}</strong> and all its license
+                            This will permanently delete <strong>{deleteApp?.name}</strong> and all its license
                             keys. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="bg-destructive hover:bg-destructive/90"
+                        >
                             {deleting ? "Deleting…" : "Delete"}
                         </AlertDialogAction>
                     </AlertDialogFooter>

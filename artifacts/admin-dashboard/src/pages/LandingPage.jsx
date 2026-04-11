@@ -753,12 +753,12 @@ export default function LandingPage() {
           <p className="text-base mb-8 relative z-10" style={{ color: "#64748b" }}>
             Get up and running in under 5 minutes. No credit card required.
           </p>
-          <Link to="/" className="relative z-10 inline-flex items-center gap-2 px-10 py-4 rounded-2xl font-bold text-base transition-all duration-300 hover:scale-105 hover:shadow-2xl" style={{
+          <Link to="/login" className="relative z-10 inline-flex items-center gap-2 px-10 py-4 rounded-2xl font-bold text-base transition-all duration-300 hover:scale-105 hover:shadow-2xl" style={{
             background: "linear-gradient(135deg, #0ea5e9, #06b6d4)",
             color: "#fff",
             boxShadow: "0 8px 32px rgba(6,182,212,0.4)",
         }}>
-            Open the Dashboard <ArrowRight className="h-5 w-5"/>
+            Get Started Free <ArrowRight className="h-5 w-5"/>
           </Link>
         </div>
       </section>

@@ -16,9 +16,8 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Copy, Plus, Trash2, ArrowLeft, Ban, CheckCircle, XCircle } from "lucide-react";
+import { Copy, Plus, Trash2, ArrowLeft, Ban, CheckCircle, XCircle, Monitor } from "lucide-react";
 import { useUserPlan } from "@/contexts/UserPlanContext";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
@@ -36,17 +35,6 @@ function StatusBadge({ status }) {
     );
 }
 
-function ExpiryDisplay({ expires_at }) {
-    if (!expires_at) return <span className="text-xs text-muted-foreground">Never</span>;
-    const date = new Date(expires_at);
-    const isPast = date < new Date();
-    return (
-        <span className={`text-xs ${isPast ? "text-red-400" : "text-muted-foreground"}`}>
-            {isPast ? "Expired " : ""}{date.toLocaleDateString()}
-        </span>
-    );
-}
-
 export default function LicensesPage() {
     const [searchParams] = useSearchParams();
     const filterAppId = searchParams.get("app_id");
@@ -59,9 +47,7 @@ export default function LicensesPage() {
     const [createOpen, setCreateOpen] = useState(false);
     const [selectedAppId, setSelectedAppId] = useState(filterAppId ?? "");
     const [count, setCount] = useState("1");
-    const [userLabel, setUserLabel] = useState("");
-    const [notes, setNotes] = useState("");
-    const [expiresAt, setExpiresAt] = useState("");
+    const [maxHwids, setMaxHwids] = useState("");
     const [creating, setCreating] = useState(false);
 
     const [statusDialog, setStatusDialog] = useState(null);
@@ -90,19 +76,22 @@ export default function LicensesPage() {
             return;
         }
         setSelectedAppId(filterAppId ?? "");
+        setCount("1");
+        setMaxHwids("");
         setCreateOpen(true);
     };
 
     const handleCreate = async () => {
         if (!selectedAppId) return;
         setCreating(true);
-        const result = await licensesApi.create({
+        const payload = {
             app_id: selectedAppId,
             count: Number(count) || 1,
-            user_label: userLabel || undefined,
-            notes: notes || undefined,
-            expires_at: expiresAt || undefined,
-        });
+        };
+        if (maxHwids && Number(maxHwids) > 0) {
+            payload.max_hwids = Number(maxHwids);
+        }
+        const result = await licensesApi.create(payload);
         setCreating(false);
         if (result) {
             if (result.code === "PLAN_LIMIT_REACHED") {
@@ -111,11 +100,9 @@ export default function LicensesPage() {
                 return;
             }
             const n = Array.isArray(result) ? result.length : 1;
-            toast.success(`${n} license key${n !== 1 ? "s" : ""} created`);
+            toast.success(`${n} license key${n !== 1 ? "s" : ""} generated`);
             setCreateOpen(false);
-            setUserLabel("");
-            setNotes("");
-            setExpiresAt("");
+            setMaxHwids("");
             setCount("1");
             fetchLicenses();
             refreshPlan();
@@ -140,18 +127,23 @@ export default function LicensesPage() {
             toast.success("License deleted");
             setDeleteDialog(null);
             fetchLicenses();
+            refreshPlan();
         }
     };
 
     const columns = [
         {
-            key: "license_key",
+            key: "key",
             label: "License Key",
             render: (row) => (
                 <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs text-foreground">{row.license_key}</span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground"
-                        onClick={() => { navigator.clipboard.writeText(row.license_key); toast.success("Copied"); }}>
+                    <span className="font-mono text-xs text-foreground">{row.key}</span>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                        onClick={() => { navigator.clipboard.writeText(row.key); toast.success("Copied"); }}
+                    >
                         <Copy className="h-3 w-3" />
                     </Button>
                 </div>
@@ -163,24 +155,30 @@ export default function LicensesPage() {
             render: (row) => <StatusBadge status={row.status} />,
         },
         {
-            key: "user_label",
-            label: "Label",
-            render: (row) => <span className="text-xs text-muted-foreground">{row.user_label || "—"}</span>,
-        },
-        {
-            key: "expires_at",
-            label: "Expires",
-            render: (row) => <ExpiryDisplay expires_at={row.expires_at} />,
+            key: "max_hwids",
+            label: "Max HWIDs",
+            render: (row) => (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Monitor className="h-3 w-3" />
+                    {row.max_hwids != null ? row.max_hwids : "Unlimited"}
+                </span>
+            ),
         },
         ...(!filterAppId ? [{
             key: "app_name",
             label: "Application",
-            render: (row) => <span className="text-xs text-muted-foreground">{row.app_name ?? "—"}</span>,
+            render: (row) => (
+                <span className="text-xs text-muted-foreground">{row.app_name ?? "—"}</span>
+            ),
         }] : []),
         {
             key: "created_at",
             label: "Created",
-            render: (row) => <span className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</span>,
+            render: (row) => (
+                <span className="text-xs text-muted-foreground">
+                    {row.created_at ? new Date(row.created_at).toLocaleDateString() : "—"}
+                </span>
+            ),
         },
         {
             key: "id",
@@ -188,25 +186,41 @@ export default function LicensesPage() {
             render: (row) => (
                 <div className="flex items-center gap-1">
                     {row.status !== "active" && (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-emerald-500 hover:text-emerald-400"
-                            onClick={() => handleSetStatus(row, "active")}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs gap-1 text-emerald-500 hover:text-emerald-400"
+                            onClick={() => handleSetStatus(row, "active")}
+                        >
                             <CheckCircle className="h-3 w-3" /> Activate
                         </Button>
                     )}
                     {row.status !== "inactive" && (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                            onClick={() => handleSetStatus(row, "inactive")}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleSetStatus(row, "inactive")}
+                        >
                             <XCircle className="h-3 w-3" /> Deactivate
                         </Button>
                     )}
                     {row.status !== "banned" && (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-red-500 hover:text-red-400"
-                            onClick={() => handleSetStatus(row, "banned")}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs gap-1 text-red-500 hover:text-red-400"
+                            onClick={() => handleSetStatus(row, "banned")}
+                        >
                             <Ban className="h-3 w-3" /> Ban
                         </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteDialog(row)}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => setDeleteDialog(row)}
+                    >
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                 </div>
@@ -262,33 +276,40 @@ export default function LicensesPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {apps.map(app => (
-                                            <SelectItem key={app.id} value={app.id}>{app.app_name}</SelectItem>
+                                            <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
                         )}
                         <div className="space-y-1.5">
-                            <Label>Quantity (max 100)</Label>
-                            <Input type="number" min="1" max="100" value={count} onChange={e => setCount(e.target.value)} />
+                            <Label>Quantity <span className="text-muted-foreground text-xs">(max 100)</span></Label>
+                            <Input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={count}
+                                onChange={e => setCount(e.target.value)}
+                            />
                         </div>
                         <div className="space-y-1.5">
-                            <Label>User Label <span className="text-muted-foreground">(optional)</span></Label>
-                            <Input placeholder="e.g. customer name or order ID" value={userLabel} onChange={e => setUserLabel(e.target.value)} />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label>Expiry Date <span className="text-muted-foreground">(optional)</span></Label>
-                            <Input type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label>Notes <span className="text-muted-foreground">(optional)</span></Label>
-                            <Input placeholder="Internal note…" value={notes} onChange={e => setNotes(e.target.value)} />
+                            <Label>
+                                Max HWIDs{" "}
+                                <span className="text-muted-foreground text-xs">(optional — leave blank for unlimited)</span>
+                            </Label>
+                            <Input
+                                type="number"
+                                min="1"
+                                placeholder="e.g. 3"
+                                value={maxHwids}
+                                onChange={e => setMaxHwids(e.target.value)}
+                            />
                         </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
                         <Button onClick={handleCreate} disabled={creating || !selectedAppId}>
-                            {creating ? "Generating…" : `Generate ${count > 1 ? count + " Keys" : "Key"}`}
+                            {creating ? "Generating…" : `Generate ${Number(count) > 1 ? count + " Keys" : "Key"}`}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -299,13 +320,18 @@ export default function LicensesPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete License Key?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete the key <strong className="font-mono">{deleteDialog?.license_key}</strong>.
+                            This will permanently delete the key{" "}
+                            <strong className="font-mono">{deleteDialog?.key}</strong>.
                             This cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="bg-destructive hover:bg-destructive/90"
+                        >
                             {deleting ? "Deleting…" : "Delete"}
                         </AlertDialogAction>
                     </AlertDialogFooter>

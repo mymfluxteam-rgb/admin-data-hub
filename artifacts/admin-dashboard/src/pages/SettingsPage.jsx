@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Globe, Users, Key, Cpu, CreditCard, ShieldCheck, Bell, Activity, HardDrive, UserCog, Zap, CheckCircle2 } from "lucide-react";
+import { Globe, Users, Key, Cpu, CreditCard, ShieldCheck, Bell, Activity, HardDrive, UserCog, Zap, CheckCircle2, UserCircle } from "lucide-react";
 import GeneralTab from "./settings/GeneralTab";
 import UserManagementTab from "./settings/UserManagementTab";
 import ApiSettingsTab from "./settings/ApiSettingsTab";
@@ -11,12 +11,14 @@ import NotificationsTab from "./settings/NotificationsTab";
 import SystemStatusTab from "./settings/SystemStatusTab";
 import BackupRestoreTab from "./settings/BackupRestoreTab";
 import AdminUsersTab from "./settings/AdminUsersTab";
+import ProfileTab from "./settings/ProfileTab";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserPlan } from "@/contexts/UserPlanContext";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const TAB_DEFS = [
+    { value: "profile", label: "Profile", icon: UserCircle },
     { value: "general", key: "settings.tabs.general", icon: Globe },
     { value: "users", key: "settings.tabs.users", icon: Users },
     { value: "api", key: "settings.tabs.api", icon: Key },
@@ -105,7 +107,7 @@ function PlanBanner() {
 }
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState("general");
+    const [activeTab, setActiveTab] = useState("profile");
     const { t } = useLanguage();
 
     return (
@@ -124,19 +126,20 @@ export default function SettingsPage() {
                 orientation="vertical"
             >
                 <TabsList className="flex flex-col h-auto w-52 shrink-0 bg-sidebar border border-border/50 rounded-lg p-1.5 gap-0.5 sticky top-0">
-                    {TAB_DEFS.map(({ value, key, icon: Icon }) => (
+                    {TAB_DEFS.map(({ value, key, label, icon: Icon }) => (
                         <TabsTrigger
                             key={value}
                             value={value}
                             className="w-full justify-start gap-2.5 px-3 py-2 text-sm rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground"
                         >
                             <Icon className="h-4 w-4 shrink-0" />
-                            {t(key)}
+                            {label ?? t(key)}
                         </TabsTrigger>
                     ))}
                 </TabsList>
 
                 <div className="flex-1 min-w-0">
+                    <TabsContent value="profile" className="mt-0"><ProfileTab /></TabsContent>
                     <TabsContent value="general" className="mt-0"><GeneralTab /></TabsContent>
                     <TabsContent value="users" className="mt-0"><UserManagementTab /></TabsContent>
                     <TabsContent value="api" className="mt-0"><ApiSettingsTab /></TabsContent>

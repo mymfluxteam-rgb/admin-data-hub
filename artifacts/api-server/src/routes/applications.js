@@ -1,13 +1,8 @@
 import { Router } from "express";
-import { randomBytes } from "crypto";
 import { pool } from "@workspace/db";
 import { supabase } from "../lib/supabase";
 
 const router = Router();
-
-function generateSecret() {
-    return randomBytes(32).toString("hex");
-}
 
 async function getUserPlanLimits(userId) {
     const { data: userData } = await supabase
@@ -58,9 +53,9 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
     const userId = req.user.id;
-    const { app_name } = req.body;
-    if (!app_name || !app_name.trim()) {
-        res.status(400).json({ message: "app_name is required" });
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+        res.status(400).json({ message: "name is required" });
         return;
     }
 
@@ -87,13 +82,11 @@ router.post("/", async (req, res) => {
         }
     }
 
-    const app_secret = generateSecret();
     const client = await pool.connect();
     try {
         const { rows } = await client.query(
-            `INSERT INTO applications (app_name, app_secret, owner_id)
-             VALUES ($1, $2, $3) RETURNING *`,
-            [app_name.trim(), app_secret, userId]
+            `INSERT INTO applications (name, owner_id) VALUES ($1, $2) RETURNING *`,
+            [name.trim(), userId]
         );
         res.status(201).json(rows[0]);
     } catch (err) {
@@ -105,34 +98,16 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
     const userId = req.user.id;
-    const { app_name } = req.body;
-    if (!app_name || !app_name.trim()) {
-        res.status(400).json({ message: "app_name is required" });
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+        res.status(400).json({ message: "name is required" });
         return;
     }
     const client = await pool.connect();
     try {
         const { rows } = await client.query(
-            "UPDATE applications SET app_name = $1 WHERE id = $2 AND owner_id = $3 RETURNING *",
-            [app_name.trim(), req.params.id, userId]
-        );
-        if (!rows[0]) { res.status(404).json({ message: "Application not found" }); return; }
-        res.json(rows[0]);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    } finally {
-        client.release();
-    }
-});
-
-router.post("/:id/rotate-secret", async (req, res) => {
-    const userId = req.user.id;
-    const app_secret = generateSecret();
-    const client = await pool.connect();
-    try {
-        const { rows } = await client.query(
-            "UPDATE applications SET app_secret = $1 WHERE id = $2 AND owner_id = $3 RETURNING *",
-            [app_secret, req.params.id, userId]
+            "UPDATE applications SET name = $1 WHERE id = $2 AND owner_id = $3 RETURNING *",
+            [name.trim(), req.params.id, userId]
         );
         if (!rows[0]) { res.status(404).json({ message: "Application not found" }); return; }
         res.json(rows[0]);
@@ -147,7 +122,10 @@ router.delete("/:id", async (req, res) => {
     const userId = req.user.id;
     const client = await pool.connect();
     try {
-        await client.query("DELETE FROM applications WHERE id = $1 AND owner_id = $2", [req.params.id, userId]);
+        await client.query(
+            "DELETE FROM applications WHERE id = $1 AND owner_id = $2",
+            [req.params.id, userId]
+        );
         res.status(204).end();
     } catch (err) {
         res.status(500).json({ message: err.message });

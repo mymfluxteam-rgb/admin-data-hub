@@ -31,14 +31,14 @@ router.get("/", async (req, res) => {
     try {
         let query, params;
         if (app_id) {
-            query = `SELECT l.*, a.app_name FROM licenses l
-                     LEFT JOIN applications a ON l.app_id = a.id
+            query = `SELECT l.*, a.name AS app_name FROM licenses l
+                     INNER JOIN applications a ON l.app_id = a.id
                      WHERE l.app_id = $1 AND a.owner_id = $2
                      ORDER BY l.created_at DESC`;
             params = [app_id, userId];
         } else {
-            query = `SELECT l.*, a.app_name FROM licenses l
-                     LEFT JOIN applications a ON l.app_id = a.id
+            query = `SELECT l.*, a.name AS app_name FROM licenses l
+                     INNER JOIN applications a ON l.app_id = a.id
                      WHERE a.owner_id = $1
                      ORDER BY l.created_at DESC`;
             params = [userId];
@@ -57,8 +57,8 @@ router.get("/:id", async (req, res) => {
     const client = await pool.connect();
     try {
         const { rows } = await client.query(
-            `SELECT l.*, a.app_name FROM licenses l
-             LEFT JOIN applications a ON l.app_id = a.id
+            `SELECT l.*, a.name AS app_name FROM licenses l
+             INNER JOIN applications a ON l.app_id = a.id
              WHERE l.id = $1 AND a.owner_id = $2`,
             [req.params.id, userId]
         );
@@ -73,7 +73,7 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
     const userId = req.user.id;
-    const { app_id, user_label, notes, expires_at, count } = req.body;
+    const { app_id, count, max_hwids } = req.body;
     if (!app_id) {
         res.status(400).json({ message: "app_id is required" });
         return;
@@ -112,20 +112,24 @@ router.post("/", async (req, res) => {
             [app_id, userId]
         );
         if (!appRows[0]) {
-            res.status(404).json({ message: "Application not found" });
+            res.status(404).json({ message: "Application not found or access denied" });
             return;
         }
+
         const batchCount = Math.min(Math.max(Number(count) || 1, 1), 100);
+        const hwids = max_hwids ? parseInt(max_hwids, 10) : null;
         const results = [];
+
         for (let i = 0; i < batchCount; i++) {
-            const license_key = generateLicenseKey();
+            const key = generateLicenseKey();
             const { rows } = await client.query(
-                `INSERT INTO licenses (app_id, license_key, status, user_label, notes, expires_at)
-                 VALUES ($1, $2, 'active', $3, $4, $5) RETURNING *`,
-                [app_id, license_key, user_label ?? null, notes ?? null, expires_at ?? null]
+                `INSERT INTO licenses (key, app_id, status, max_hwids)
+                 VALUES ($1, $2, 'active', $3) RETURNING *`,
+                [key, app_id, hwids]
             );
             results.push(rows[0]);
         }
+
         res.status(201).json(batchCount === 1 ? results[0] : results);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -162,15 +166,15 @@ router.put("/:id/status", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
     const userId = req.user.id;
-    const { user_label, notes, expires_at, hwid } = req.body;
+    const { max_hwids } = req.body;
     const client = await pool.connect();
     try {
         const { rows } = await client.query(
-            `UPDATE licenses SET user_label = $1, notes = $2, expires_at = $3, hwid = $4
-             WHERE id = $5
-               AND app_id IN (SELECT id FROM applications WHERE owner_id = $6)
+            `UPDATE licenses SET max_hwids = $1
+             WHERE id = $2
+               AND app_id IN (SELECT id FROM applications WHERE owner_id = $3)
              RETURNING *`,
-            [user_label ?? null, notes ?? null, expires_at ?? null, hwid ?? null, req.params.id, userId]
+            [max_hwids ?? null, req.params.id, userId]
         );
         if (!rows[0]) { res.status(404).json({ message: "License not found" }); return; }
         res.json(rows[0]);

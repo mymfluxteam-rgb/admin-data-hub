@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Users, UserCheck, DollarSign, Activity, LogOut } from "lucide-react";
+import { AppWindow, KeyRound, DollarSign, List, LogOut } from "lucide-react";
 import { MetricCard } from "@/components/MetricCard";
 import { metricsApi } from "@/lib/api";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -7,7 +7,6 @@ import { AddUserDialog } from "@/components/AddUserDialog";
 import { AddCreditDialog } from "@/components/AddCreditDialog";
 import { HwidActionDialog } from "@/components/HwidActionDialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 const tooltipStyle = {
@@ -18,8 +17,8 @@ const tooltipStyle = {
 };
 
 const DEFAULT_METRICS = {
-    totalUsers: 0, activeUsers: 0, revenue: 0, apiCalls: 0,
-    userGrowth: 0, activeGrowth: 0, revenueGrowth: 0, apiGrowth: 0,
+    totalApps: 0, activeLicenses: 0, revenue: 0, totalLicenses: 0,
+    appGrowth: 0, activeGrowth: 0, revenueGrowth: 0, licenseGrowth: 0,
 };
 
 function UserProfileCard() {
@@ -82,19 +81,38 @@ export default function Dashboard() {
     const [metrics, setMetrics] = useState(DEFAULT_METRICS);
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { t } = useLanguage();
 
     useEffect(() => {
         Promise.all([metricsApi.getDashboard(), metricsApi.getChartData()])
-            .then(([m, c]) => { setMetrics(m); setChartData(c); })
+            .then(([m, c]) => { setMetrics({ ...DEFAULT_METRICS, ...m }); setChartData(c); })
             .finally(() => setLoading(false));
     }, []);
 
     const metricCards = [
-        { title: t("dashboard.totalUsers"), value: metrics.totalUsers.toLocaleString(), change: metrics.userGrowth, icon: Users },
-        { title: t("dashboard.activeUsers"), value: metrics.activeUsers.toLocaleString(), change: metrics.activeGrowth, icon: UserCheck },
-        { title: t("dashboard.revenue"), value: `$${metrics.revenue.toLocaleString()}`, change: metrics.revenueGrowth, icon: DollarSign },
-        { title: t("dashboard.apiCalls"), value: metrics.apiCalls.toLocaleString(), change: metrics.apiGrowth, icon: Activity },
+        {
+            title: "Total Applications",
+            value: metrics.totalApps.toLocaleString(),
+            change: metrics.appGrowth,
+            icon: AppWindow,
+        },
+        {
+            title: "Active Licenses",
+            value: metrics.activeLicenses.toLocaleString(),
+            change: metrics.activeGrowth,
+            icon: KeyRound,
+        },
+        {
+            title: "Revenue",
+            value: `$${metrics.revenue.toLocaleString()}`,
+            change: metrics.revenueGrowth,
+            icon: DollarSign,
+        },
+        {
+            title: "Total Licenses",
+            value: metrics.totalLicenses.toLocaleString(),
+            change: metrics.licenseGrowth,
+            icon: List,
+        },
     ];
 
     return (<div className="space-y-6">
@@ -102,8 +120,8 @@ export default function Dashboard() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Real-time overview of your license platform</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <AddUserDialog />
@@ -123,7 +141,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="glass-card rounded-lg p-6 animate-fade-in" style={{ animationDelay: "400ms" }}>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">{t("dashboard.userGrowth")}</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">Application Growth</h3>
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={chartData}>
               <defs>
@@ -142,7 +160,7 @@ export default function Dashboard() {
         </div>
 
         <div className="glass-card rounded-lg p-6 animate-fade-in" style={{ animationDelay: "500ms" }}>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">{t("dashboard.revenueTrends")}</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">Revenue Trends</h3>
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={chartData}>
               <defs>

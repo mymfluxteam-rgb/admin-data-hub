@@ -36,9 +36,19 @@ router.post("/provision", async (req, res) => {
                 return;
             }
 
+            await supabase.from("subscriptions").upsert(
+                { user_id: userId, plan_id: "tester", status: "active" },
+                { onConflict: "user_id" }
+            );
+
             res.json({ provisioned: false, user: updatedUser });
             return;
         }
+
+        await supabase.from("subscriptions").upsert(
+            { user_id: userId, plan_id: existing.plan_id, status: "active" },
+            { onConflict: "user_id" }
+        );
 
         res.json({ provisioned: false, user: existing });
         return;
@@ -73,6 +83,11 @@ router.post("/provision", async (req, res) => {
         res.status(500).json({ message: insertErr.message });
         return;
     }
+
+    await supabase.from("subscriptions").upsert(
+        { user_id: userId, plan_id: "tester", status: "active" },
+        { onConflict: "user_id" }
+    );
 
     await supabase.from("audit_logs").insert({
         action: "user.provision",
@@ -121,8 +136,7 @@ router.get("/plan", async (req, res) => {
         } finally {
             client.release();
         }
-    } catch (_err) {
-    }
+    } catch (_err) {}
 
     res.json({
         planName,
@@ -131,6 +145,23 @@ router.get("/plan", async (req, res) => {
         currentApplications,
         currentLicenses,
     });
+});
+
+router.get("/subscription", async (req, res) => {
+    const userId = req.user.id;
+
+    const { data, error } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (error) {
+        res.status(500).json({ message: error.message });
+        return;
+    }
+
+    res.json(data ?? { user_id: userId, plan_id: null, status: null });
 });
 
 export default router;

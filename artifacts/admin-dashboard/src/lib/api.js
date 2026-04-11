@@ -118,9 +118,8 @@ export const userApiKeysApi = {
 export const applicationsApi = {
     getAll: () => request("GET", "/api/applications").then((d) => d ?? []),
     get: (id) => request("GET", `/api/applications/${id}`),
-    create: (payload) => request("POST", "/api/applications", payload),
-    update: (id, payload) => request("PUT", `/api/applications/${id}`, payload),
-    rotateSecret: (id) => request("POST", `/api/applications/${id}/rotate-secret`),
+    create: (payload) => request("POST", "/api/applications", { name: payload.name ?? payload.app_name }),
+    update: (id, payload) => request("PUT", `/api/applications/${id}`, { name: payload.name ?? payload.app_name }),
     delete: async (id) => {
         const token = localStorage.getItem("admin_jwt");
         const res = await fetch(`/api/applications/${id}`, {
@@ -155,6 +154,13 @@ export const planApi = {
         licensedUsers: null,
         currentApplications: 0,
         currentLicenses: 0,
+    }),
+};
+export const subscriptionApi = {
+    getMine: () => request("GET", "/api/me/subscription").then((d) => d ?? {
+        user_id: null,
+        plan_id: null,
+        status: null,
     }),
 };
 export const authApi = {
