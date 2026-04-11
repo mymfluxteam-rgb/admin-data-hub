@@ -101,17 +101,26 @@ All routes mounted at `/api/`:
 
 | Route | File | Description |
 |---|---|---|
-| `/users` | `routes/users.ts` | User CRUD, ban/unban, credits, expiry, API keys |
-| `/transactions` | `routes/transactions.ts` | Transaction history |
-| `/hwids` | `routes/hwids.ts` | HWID/device management |
-| `/sessions` | `routes/sessions.ts` | Active session management |
-| `/audit-logs` | `routes/auditLogs.ts` | Audit log history |
-| `/metrics` | `routes/metrics.ts` | Dashboard metrics |
-| `/chart-data` | `routes/chartData.ts` | Chart time-series data |
-| `/api-keys` | `routes/apiKeys.ts` | Third-party API key management (CRUD, validate, rotate, revoke) |
-| `/api-key-templates` | `routes/apiKeyTemplates.ts` | Reusable API key permission templates |
-| `/settings` | `routes/settings.ts` | System settings (per-group upsert/fetch) |
-| `/admin-users` | `routes/adminUsers.ts` | Admin user promotion/demotion/role management |
+| `/users` | `routes/users.js` | User CRUD, ban/unban, credits, expiry, API keys, admin-only plan upgrades |
+| `/me/provision` | `routes/me.js` | Creates or repairs OAuth user profiles with the default Tester plan |
+| `/me/plan` | `routes/me.js` | Current user's plan and usage summary |
+| `/plans` | `routes/plans.js` | Lists available plans |
+| `/transactions` | `routes/transactions.js` | Transaction history |
+| `/hwids` | `routes/hwids.js` | HWID/device management |
+| `/sessions` | `routes/sessions.js` | Active session management |
+| `/audit-logs` | `routes/auditLogs.js` | Audit log history |
+| `/metrics` | `routes/metrics.js` | Dashboard metrics |
+| `/chart-data` | `routes/chartData.js` | Chart time-series data |
+| `/api-keys` | `routes/apiKeys.js` | Third-party API key management (CRUD, validate, rotate, revoke) |
+| `/api-key-templates` | `routes/apiKeyTemplates.js` | Reusable API key permission templates |
+| `/settings` | `routes/settings.js` | System settings (per-group upsert/fetch) |
+| `/admin-users` | `routes/adminUsers.js` | Admin user promotion/demotion/role management |
+
+## Plan Assignment
+
+- New Google/GitHub OAuth profiles are assigned the `Tester` plan by default through `/api/me/provision` and the Supabase migration trigger in `artifacts/api-server/migrations/003_user_plans.sql`.
+- `users.plan_id` references `plans.id`; apply `003_user_plans.sql` in Supabase SQL Editor to add the relationship and backfill existing users.
+- Manual plan changes are handled by `PUT /api/users/:id/plan`, require an admin role, and only allow upgrades to `Developer` or `Seller`.
 
 ## Required Supabase Tables
 

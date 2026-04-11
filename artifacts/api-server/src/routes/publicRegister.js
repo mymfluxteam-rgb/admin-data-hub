@@ -19,6 +19,7 @@ import { Router } from "express";
 import { randomBytes } from "crypto";
 import { rateLimit } from "express-rate-limit";
 import { supabase } from "../lib/supabase";
+import { getDefaultTesterPlanId } from "../lib/plans";
 const router = Router();
 // ── Rate limit: max 10 registrations per IP per 15 min ──────────────────────
 const registrationLimiter = rateLimit({
@@ -145,6 +146,13 @@ router.post("/register", registrationLimiter, async (req, res) => {
     // 7. Generate the new user's own public API key + 30-day default expiry
     const userPublicApiKey = randomBytes(16).toString("hex");
     const accountExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    let testerPlanId;
+    try {
+        testerPlanId = await getDefaultTesterPlanId();
+    } catch (_err) {
+        res.status(500).json({ success: false, error: "DEFAULT_PLAN_MISSING", message: "Tester plan not found — please run the SQL migration in Supabase" });
+        return;
+    }
     // 8. Insert user — include owner_id if the column exists
     const userPayload = {
         username: normalizedUsername,
@@ -156,6 +164,7 @@ router.post("/register", registrationLimiter, async (req, res) => {
         role: role === "admin" ? "user" : (role ?? "user"), // never let API grant admin
         public_api_key: userPublicApiKey,
         account_expiry: accountExpiry,
+        plan_id: testerPlanId,
         ...(hwid ? { hwid } : {}),
         // Link to the account owner — requires migration 002_users_owner_id.sql
         owner_id: keyRow.user_id,
@@ -182,6 +191,7 @@ router.post("/register", registrationLimiter, async (req, res) => {
                 role: role === "admin" ? "user" : (role ?? "user"),
                 public_api_key: userPublicApiKey,
                 account_expiry: accountExpiry,
+                plan_id: testerPlanId,
                 ...(hwid ? { hwid } : {}),
             };
             void _un;

@@ -16,6 +16,8 @@ const PLAN_COLORS = {
     Seller:    { bg: "rgba(168,85,247,0.15)",  text: "#c084fc" },
 };
 
+const MANUAL_UPGRADE_PLAN_NAMES = new Set(["Developer", "Seller"]);
+
 function PlanBadge({ planName }) {
     const color = PLAN_COLORS[planName] ?? { bg: "rgba(100,116,139,0.15)", text: "#94a3b8" };
     return (
@@ -438,7 +440,7 @@ export default function UsersPage() {
                   <SelectValue placeholder="Choose a plan…"/>
                 </SelectTrigger>
                 <SelectContent>
-                  {plans.map((p) => (
+                  {plans.filter((p) => MANUAL_UPGRADE_PLAN_NAMES.has(p.plan_name)).map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                           <span className="flex items-center gap-2">
                               <PlanBadge planName={p.plan_name}/>

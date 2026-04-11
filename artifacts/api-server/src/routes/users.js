@@ -2,6 +2,7 @@ import { Router } from "express";
 import { randomBytes } from "crypto";
 import { supabase } from "../lib/supabase";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { getDefaultTesterPlanId, resolveManualUpgradePlan } from "../lib/plans";
 const router = Router();
 router.get("/", async (_req, res) => {
     const { data, error } = await supabase.from("users").select("*").order("created_at", { ascending: false });
@@ -40,6 +41,14 @@ router.post("/", async (req, res) => {
         res.status(400).json({ message: "password must be at least 6 characters" });
         return;
     }
+    let testerPlanId;
+    try {
+        testerPlanId = await getDefaultTesterPlanId();
+    } catch (_err) {
+        res.status(500).json({ message: "Tester plan not found — please run the SQL migration in Supabase" });
+        return;
+    }
+
     const { data, error } = await supabase
         .from("users")
         .insert({
@@ -50,6 +59,7 @@ router.post("/", async (req, res) => {
         status: "active",
         verified: false,
         credits: 0,
+        plan_id: testerPlanId,
     })
         .select()
         .single();
@@ -310,27 +320,17 @@ router.delete("/:id", async (req, res) => {
 router.put("/:id/plan", requireAdmin, async (req, res) => {
     const { plan_id, plan_name } = req.body;
 
-    let targetPlanId = plan_id;
-    if (!targetPlanId && plan_name) {
-        const { data: plan, error: planErr } = await supabase
-            .from("plans")
-            .select("id, plan_name")
-            .eq("plan_name", plan_name)
-            .single();
-        if (planErr || !plan) {
-            res.status(400).json({ message: "Plan not found" });
-            return;
-        }
-        targetPlanId = plan.id;
-    }
-    if (!targetPlanId) {
-        res.status(400).json({ message: "plan_id or plan_name is required" });
+    let targetPlan;
+    try {
+        targetPlan = await resolveManualUpgradePlan({ plan_id, plan_name });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
         return;
     }
 
     const { data, error } = await supabase
         .from("users")
-        .update({ plan_id: targetPlanId })
+        .update({ plan_id: targetPlan.id })
         .eq("id", req.params["id"])
         .select("id, username, email, role, plan_id, plans(plan_name)")
         .single();
@@ -344,7 +344,7 @@ router.put("/:id/plan", requireAdmin, async (req, res) => {
         action: "user.plan_change",
         actor: req.user.email,
         target: req.params["id"],
-        details: `Plan upgraded to: ${plan_name ?? targetPlanId}`,
+        details: `Plan upgraded to: ${targetPlan.plan_name}`,
     });
 
     res.json(data);

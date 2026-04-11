@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { supabase } from "../lib/supabase";
 import { pool } from "@workspace/db";
+import { getDefaultTesterPlanId } from "../lib/plans";
 
 const router = Router();
 
@@ -9,22 +10,44 @@ router.post("/provision", async (req, res) => {
 
     const { data: existing } = await supabase
         .from("users")
-        .select("id, plan_id, role")
+        .select("id, plan_id, role, email")
         .eq("id", userId)
         .maybeSingle();
 
     if (existing) {
+        if (!existing.plan_id) {
+            let testerPlanId;
+            try {
+                testerPlanId = await getDefaultTesterPlanId();
+            } catch (_err) {
+                res.status(500).json({ message: "Tester plan not found — please run the SQL migration in Supabase" });
+                return;
+            }
+
+            const { data: updatedUser, error: updateErr } = await supabase
+                .from("users")
+                .update({ plan_id: testerPlanId })
+                .eq("id", userId)
+                .select("id, plan_id, role, email")
+                .single();
+
+            if (updateErr) {
+                res.status(500).json({ message: updateErr.message });
+                return;
+            }
+
+            res.json({ provisioned: false, user: updatedUser });
+            return;
+        }
+
         res.json({ provisioned: false, user: existing });
         return;
     }
 
-    const { data: testerPlan, error: planErr } = await supabase
-        .from("plans")
-        .select("id")
-        .eq("plan_name", "Tester")
-        .single();
-
-    if (planErr || !testerPlan) {
+    let testerPlanId;
+    try {
+        testerPlanId = await getDefaultTesterPlanId();
+    } catch (_err) {
         res.status(500).json({ message: "Tester plan not found — please run the SQL migration in Supabase" });
         return;
     }
@@ -36,11 +59,12 @@ router.post("/provision", async (req, res) => {
             id: userId,
             email,
             username,
+            password_hash: "oauth",
             role: "user",
             status: "active",
             verified: true,
             credits: 0,
-            plan_id: testerPlan.id,
+            plan_id: testerPlanId,
         })
         .select()
         .single();

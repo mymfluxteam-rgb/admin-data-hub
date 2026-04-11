@@ -2,6 +2,7 @@ import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { randomBytes } from "crypto";
 import { supabase } from "../lib/supabase";
+import { getDefaultTesterPlanId } from "../lib/plans";
 const router = Router();
 const registrationLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -39,6 +40,13 @@ router.post("/", registrationLimiter, async (req, res) => {
     }
     const publicApiKey = randomBytes(16).toString("hex");
     const accountExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    let testerPlanId;
+    try {
+        testerPlanId = await getDefaultTesterPlanId();
+    } catch (_err) {
+        res.status(500).json({ message: "Tester plan not found — please run the SQL migration in Supabase" });
+        return;
+    }
     const { data: newUser, error: insertError } = await supabase
         .from("users")
         .insert({
@@ -52,6 +60,7 @@ router.post("/", registrationLimiter, async (req, res) => {
         role: "user",
         public_api_key: publicApiKey,
         account_expiry: accountExpiry,
+        plan_id: testerPlanId,
     })
         .select("id, username, email, status, verified, credits, role, public_api_key, account_expiry, created_at")
         .single();
