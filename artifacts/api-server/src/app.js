@@ -30,9 +30,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/auth", authRouter);
 
 const PUBLIC_API_PATHS = [
-    /^\/api\/v1\/verify/,
-    /^\/api\/v1\/public/,
-    /^\/api\/health/,
+    /^\/v1\/verify/,
+    /^\/v1\/public/,
+    /^\/healthz/,
 ];
 
 app.use("/api", (req, res, next) => {
