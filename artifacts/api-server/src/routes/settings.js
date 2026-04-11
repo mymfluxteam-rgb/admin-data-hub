@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { supabase } from "../lib/supabase";
+import { requireAdmin } from "../middlewares/requireAdmin";
 const router = Router();
 const DEFAULTS = {
     general: {
@@ -104,8 +105,8 @@ router.get("/:group", async (req, res) => {
     const value = data ? data["setting_value"] : DEFAULTS[group] ?? {};
     res.json(value);
 });
-// PUT /api/settings/:group — upsert a settings group
-router.put("/:group", async (req, res) => {
+// PUT /api/settings/:group — upsert a settings group (admin only)
+router.put("/:group", requireAdmin, async (req, res) => {
     const { group } = req.params;
     const { updated_by, ...value } = req.body;
     const { data, error } = await supabase

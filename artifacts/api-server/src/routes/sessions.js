@@ -1,11 +1,16 @@
 import { Router } from "express";
 import { supabase } from "../lib/supabase";
+import { requireAdmin } from "../middlewares/requireAdmin";
+
 const router = Router();
-router.get("/", async (_req, res) => {
+
+router.get("/", async (req, res) => {
+    const userId = req.user.id;
     const { data, error } = await supabase
         .from("device_sessions")
         .select("*, users(email, username)")
         .eq("status", "active")
+        .in("app_id", supabase.from("applications").select("id").eq("owner_id", userId))
         .order("last_activity", { ascending: false });
     if (error) {
         res.status(500).json({ message: error.message });
@@ -13,7 +18,8 @@ router.get("/", async (_req, res) => {
     }
     res.json(data ?? []);
 });
-router.get("/user/:id", async (req, res) => {
+
+router.get("/user/:id", requireAdmin, async (req, res) => {
     const { data, error } = await supabase
         .from("device_sessions")
         .select("*")
@@ -25,6 +31,7 @@ router.get("/user/:id", async (req, res) => {
     }
     res.json(data ?? []);
 });
+
 router.post("/", async (req, res) => {
     const { user_id, device_id, browser, os, device_type } = req.body;
     if (!user_id || !device_id) {
@@ -50,16 +57,15 @@ router.post("/", async (req, res) => {
             return;
         }
         res.json(data);
-    }
-    else {
+    } else {
         const { data, error } = await supabase
             .from("device_sessions")
             .insert({
-            user_id, device_id, browser, os, device_type,
-            login_time: new Date().toISOString(),
-            last_activity: new Date().toISOString(),
-            status: "active",
-        })
+                user_id, device_id, browser, os, device_type,
+                login_time: new Date().toISOString(),
+                last_activity: new Date().toISOString(),
+                status: "active",
+            })
             .select()
             .single();
         if (error) {
@@ -70,7 +76,8 @@ router.post("/", async (req, res) => {
         res.status(201).json(data);
     }
 });
-router.delete("/:id", async (req, res) => {
+
+router.delete("/:id", requireAdmin, async (req, res) => {
     const { data, error } = await supabase
         .from("device_sessions")
         .update({ status: "expired" })
@@ -82,12 +89,13 @@ router.delete("/:id", async (req, res) => {
         return;
     }
     await supabase.from("audit_logs").insert({
-        action: "session.force_logout", actor: "admin", target: req.params["id"],
+        action: "session.force_logout", actor: req.user.email, target: req.params["id"],
         details: "Admin force-logged out session",
     });
     res.json(data);
 });
-router.delete("/user/:userId/all", async (req, res) => {
+
+router.delete("/user/:userId/all", requireAdmin, async (req, res) => {
     const { error } = await supabase
         .from("device_sessions")
         .update({ status: "expired" })
@@ -97,9 +105,10 @@ router.delete("/user/:userId/all", async (req, res) => {
         return;
     }
     await supabase.from("audit_logs").insert({
-        action: "session.logout_all", actor: "admin", target: req.params["userId"],
+        action: "session.logout_all", actor: req.user.email, target: req.params["userId"],
         details: "All sessions force-expired for user",
     });
     res.json({ message: "All sessions expired" });
 });
+
 export default router;

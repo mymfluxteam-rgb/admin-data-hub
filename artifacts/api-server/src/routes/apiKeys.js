@@ -1,17 +1,22 @@
 import { Router } from "express";
 import { randomBytes, createHash } from "crypto";
 import { supabase } from "../lib/supabase";
+
 const router = Router();
+
 function generateApiKey() {
     const raw = `sk_${randomBytes(24).toString("hex")}`;
     const hash = createHash("sha256").update(raw).digest("hex");
     return { raw, hash };
 }
-// GET /api/api-keys — list all API keys (hashed key only, never raw)
-router.get("/", async (_req, res) => {
+
+// GET /api/api-keys — list keys belonging to the authenticated user
+router.get("/", async (req, res) => {
+    const userId = req.user.id;
     const { data, error } = await supabase
         .from("api_keys")
         .select("id, user_id, key_name, key_type, permissions, allowed_ips, allowed_origins, rate_limit, usage_count, last_used_at, expires_at, is_active, created_at, created_by, revoked_at, revoked_by, revoke_reason")
+        .eq("user_id", userId)
         .order("created_at", { ascending: false });
     if (error) {
         res.status(500).json({ message: error.message });
@@ -19,12 +24,15 @@ router.get("/", async (_req, res) => {
     }
     res.json(data ?? []);
 });
-// GET /api/api-keys/:id — get a single key (no raw key returned)
+
+// GET /api/api-keys/:id — get a single key (must belong to the authenticated user)
 router.get("/:id", async (req, res) => {
+    const userId = req.user.id;
     const { data, error } = await supabase
         .from("api_keys")
         .select("id, user_id, key_name, key_type, permissions, allowed_ips, allowed_origins, rate_limit, usage_count, last_used_at, expires_at, is_active, created_at, created_by, revoked_at, revoked_by, revoke_reason")
         .eq("id", req.params["id"])
+        .eq("user_id", userId)
         .single();
     if (error) {
         res.status(404).json({ message: "API key not found" });
@@ -32,9 +40,11 @@ router.get("/:id", async (req, res) => {
     }
     res.json(data);
 });
-// POST /api/api-keys — create a new API key
+
+// POST /api/api-keys — create a new API key scoped to the authenticated user
 router.post("/", async (req, res) => {
-    const { user_id, key_name, key_type = "third_party", permissions = [], allowed_ips = [], allowed_origins = [], rate_limit = 100, expires_at, created_by, template_id, } = req.body;
+    const userId = req.user.id;
+    const { key_name, key_type = "third_party", permissions = [], allowed_ips = [], allowed_origins = [], rate_limit = 100, expires_at, template_id } = req.body;
     if (!key_name || key_name.trim().length === 0) {
         res.status(400).json({ message: "key_name is required" });
         return;
@@ -64,19 +74,19 @@ router.post("/", async (req, res) => {
     const { data, error } = await supabase
         .from("api_keys")
         .insert({
-        user_id: user_id ?? null,
-        api_key: raw,
-        api_key_hash: hash,
-        key_name: key_name.trim(),
-        key_type,
-        permissions: resolvedPermissions,
-        allowed_ips,
-        allowed_origins,
-        rate_limit: resolvedRateLimit,
-        expires_at: resolvedExpiresAt ?? null,
-        created_by: created_by ?? null,
-        is_active: true,
-    })
+            user_id: userId,
+            api_key: raw,
+            api_key_hash: hash,
+            key_name: key_name.trim(),
+            key_type,
+            permissions: resolvedPermissions,
+            allowed_ips,
+            allowed_origins,
+            rate_limit: resolvedRateLimit,
+            expires_at: resolvedExpiresAt ?? null,
+            created_by: userId,
+            is_active: true,
+        })
         .select("id, user_id, key_name, key_type, permissions, allowed_ips, allowed_origins, rate_limit, expires_at, created_at, created_by")
         .single();
     if (error) {
@@ -85,31 +95,26 @@ router.post("/", async (req, res) => {
     }
     await supabase.from("audit_logs").insert({
         action: "api_key.create",
-        actor: created_by ?? "admin",
+        actor: req.user.email,
         target: data["id"],
         details: `Created API key "${key_name}"`,
+        user_id: userId,
     });
-    // Return the raw key only once on creation — it cannot be retrieved again
     res.status(201).json({ ...data, api_key: raw });
 });
-// PUT /api/api-keys/:id — update key metadata
+
+// PUT /api/api-keys/:id — update key metadata (must belong to the authenticated user)
 router.put("/:id", async (req, res) => {
-    const { key_name, permissions, allowed_ips, allowed_origins, rate_limit, expires_at, is_active, } = req.body;
+    const userId = req.user.id;
+    const { key_name, permissions, allowed_ips, allowed_origins, rate_limit, expires_at, is_active } = req.body;
     const updates = {};
-    if (key_name !== undefined)
-        updates["key_name"] = key_name.trim();
-    if (permissions !== undefined)
-        updates["permissions"] = permissions;
-    if (allowed_ips !== undefined)
-        updates["allowed_ips"] = allowed_ips;
-    if (allowed_origins !== undefined)
-        updates["allowed_origins"] = allowed_origins;
-    if (rate_limit !== undefined)
-        updates["rate_limit"] = rate_limit;
-    if (expires_at !== undefined)
-        updates["expires_at"] = expires_at;
-    if (is_active !== undefined)
-        updates["is_active"] = is_active;
+    if (key_name !== undefined) updates["key_name"] = key_name.trim();
+    if (permissions !== undefined) updates["permissions"] = permissions;
+    if (allowed_ips !== undefined) updates["allowed_ips"] = allowed_ips;
+    if (allowed_origins !== undefined) updates["allowed_origins"] = allowed_origins;
+    if (rate_limit !== undefined) updates["rate_limit"] = rate_limit;
+    if (expires_at !== undefined) updates["expires_at"] = expires_at;
+    if (is_active !== undefined) updates["is_active"] = is_active;
     if (Object.keys(updates).length === 0) {
         res.status(400).json({ message: "No fields provided to update" });
         return;
@@ -118,53 +123,61 @@ router.put("/:id", async (req, res) => {
         .from("api_keys")
         .update(updates)
         .eq("id", req.params["id"])
+        .eq("user_id", userId)
         .select("id, user_id, key_name, key_type, permissions, allowed_ips, allowed_origins, rate_limit, usage_count, last_used_at, expires_at, is_active, created_at")
         .single();
-    if (error) {
-        res.status(500).json({ message: error.message });
+    if (error || !data) {
+        res.status(404).json({ message: "API key not found" });
         return;
     }
     await supabase.from("audit_logs").insert({
         action: "api_key.update",
-        actor: "admin",
+        actor: req.user.email,
         target: req.params["id"],
         details: `Updated fields: ${Object.keys(updates).join(", ")}`,
+        user_id: userId,
     });
     res.json(data);
 });
-// POST /api/api-keys/:id/revoke — revoke a key
+
+// POST /api/api-keys/:id/revoke — revoke a key (must belong to the authenticated user)
 router.post("/:id/revoke", async (req, res) => {
-    const { revoked_by, revoke_reason } = req.body;
+    const userId = req.user.id;
+    const { revoke_reason } = req.body;
     const { data, error } = await supabase
         .from("api_keys")
         .update({
-        is_active: false,
-        revoked_at: new Date().toISOString(),
-        revoked_by: revoked_by ?? null,
-        revoke_reason: revoke_reason ?? null,
-    })
+            is_active: false,
+            revoked_at: new Date().toISOString(),
+            revoked_by: userId,
+            revoke_reason: revoke_reason ?? null,
+        })
         .eq("id", req.params["id"])
+        .eq("user_id", userId)
         .select("id, key_name, is_active, revoked_at, revoke_reason")
         .single();
-    if (error) {
-        res.status(500).json({ message: error.message });
+    if (error || !data) {
+        res.status(404).json({ message: "API key not found" });
         return;
     }
     await supabase.from("audit_logs").insert({
         action: "api_key.revoke",
-        actor: revoked_by ?? "admin",
+        actor: req.user.email,
         target: req.params["id"],
         details: `Revoked API key. Reason: ${revoke_reason ?? "none"}`,
+        user_id: userId,
     });
     res.json(data);
 });
-// POST /api/api-keys/:id/rotate — rotate (regenerate) a key
+
+// POST /api/api-keys/:id/rotate — rotate (regenerate) a key (must belong to the authenticated user)
 router.post("/:id/rotate", async (req, res) => {
-    const { rotated_by } = req.body;
+    const userId = req.user.id;
     const { data: existing, error: fetchErr } = await supabase
         .from("api_keys")
         .select("id, key_name, is_active")
         .eq("id", req.params["id"])
+        .eq("user_id", userId)
         .single();
     if (fetchErr || !existing) {
         res.status(404).json({ message: "API key not found" });
@@ -179,6 +192,7 @@ router.post("/:id/rotate", async (req, res) => {
         .from("api_keys")
         .update({ api_key: raw, api_key_hash: hash })
         .eq("id", req.params["id"])
+        .eq("user_id", userId)
         .select("id, user_id, key_name, key_type, permissions, rate_limit, expires_at, created_at")
         .single();
     if (error) {
@@ -187,19 +201,22 @@ router.post("/:id/rotate", async (req, res) => {
     }
     await supabase.from("audit_logs").insert({
         action: "api_key.rotate",
-        actor: rotated_by ?? "admin",
+        actor: req.user.email,
         target: req.params["id"],
         details: `Rotated API key "${existing["key_name"]}"`,
+        user_id: userId,
     });
-    // Return the new raw key only once
     res.json({ ...data, api_key: raw });
 });
-// DELETE /api/api-keys/:id — permanently delete a key and its logs
+
+// DELETE /api/api-keys/:id — permanently delete a key (must belong to the authenticated user)
 router.delete("/:id", async (req, res) => {
+    const userId = req.user.id;
     const { data: existing, error: fetchErr } = await supabase
         .from("api_keys")
         .select("id, key_name")
         .eq("id", req.params["id"])
+        .eq("user_id", userId)
         .single();
     if (fetchErr || !existing) {
         res.status(404).json({ message: "API key not found" });
@@ -209,20 +226,23 @@ router.delete("/:id", async (req, res) => {
     const { error } = await supabase
         .from("api_keys")
         .delete()
-        .eq("id", req.params["id"]);
+        .eq("id", req.params["id"])
+        .eq("user_id", userId);
     if (error) {
         res.status(500).json({ message: error.message });
         return;
     }
     await supabase.from("audit_logs").insert({
         action: "api_key.delete",
-        actor: "admin",
+        actor: req.user.email,
         target: req.params["id"],
         details: `Deleted API key "${existing["key_name"]}"`,
+        user_id: userId,
     });
     res.status(204).send();
 });
-// POST /api/api-keys/validate — validate a raw key (check active, expiry, IP)
+
+// POST /api/api-keys/validate — validate a raw key (public endpoint, no ownership check needed)
 router.post("/validate", async (req, res) => {
     const { api_key, ip_address, endpoint, method } = req.body;
     if (!api_key) {
@@ -257,13 +277,9 @@ router.post("/validate", async (req, res) => {
         res.status(403).json({ valid: false, message: "IP address not allowed" });
         return;
     }
-    // Update usage stats and optionally log the request
     await supabase
         .from("api_keys")
-        .update({
-        usage_count: key["usage_count"] + 1,
-        last_used_at: new Date().toISOString(),
-    })
+        .update({ usage_count: key["usage_count"] + 1, last_used_at: new Date().toISOString() })
         .eq("id", key["id"]);
     if (endpoint && method) {
         await supabase.from("api_key_usage_logs").insert({
@@ -284,8 +300,20 @@ router.post("/validate", async (req, res) => {
         rate_limit: key["rate_limit"],
     });
 });
-// GET /api/api-keys/:id/usage — get usage logs for a key
+
+// GET /api/api-keys/:id/usage — get usage logs for a key (must belong to the authenticated user)
 router.get("/:id/usage", async (req, res) => {
+    const userId = req.user.id;
+    const { data: keyCheck, error: keyErr } = await supabase
+        .from("api_keys")
+        .select("id")
+        .eq("id", req.params["id"])
+        .eq("user_id", userId)
+        .single();
+    if (keyErr || !keyCheck) {
+        res.status(404).json({ message: "API key not found" });
+        return;
+    }
     const limit = Math.min(parseInt(req.query["limit"] ?? "100", 10), 500);
     const offset = parseInt(req.query["offset"] ?? "0", 10);
     const { data, error, count } = await supabase
@@ -300,9 +328,21 @@ router.get("/:id/usage", async (req, res) => {
     }
     res.json({ total: count ?? 0, limit, offset, data: data ?? [] });
 });
-// POST /api/api-keys/:id/usage — log a usage entry externally
+
+// POST /api/api-keys/:id/usage — log a usage entry externally (must belong to the authenticated user)
 router.post("/:id/usage", async (req, res) => {
-    const { user_id, endpoint, method, ip_address, user_agent, response_status, response_time_ms } = req.body;
+    const userId = req.user.id;
+    const { data: keyCheck, error: keyErr } = await supabase
+        .from("api_keys")
+        .select("id")
+        .eq("id", req.params["id"])
+        .eq("user_id", userId)
+        .single();
+    if (keyErr || !keyCheck) {
+        res.status(404).json({ message: "API key not found" });
+        return;
+    }
+    const { endpoint, method, ip_address, user_agent, response_status, response_time_ms } = req.body;
     if (!endpoint || !method) {
         res.status(400).json({ message: "endpoint and method are required" });
         return;
@@ -310,15 +350,15 @@ router.post("/:id/usage", async (req, res) => {
     const { data, error } = await supabase
         .from("api_key_usage_logs")
         .insert({
-        api_key_id: req.params["id"],
-        user_id: user_id ?? null,
-        endpoint,
-        method,
-        ip_address: ip_address ?? null,
-        user_agent: user_agent ?? null,
-        response_status: response_status ?? null,
-        response_time_ms: response_time_ms ?? null,
-    })
+            api_key_id: req.params["id"],
+            user_id: userId,
+            endpoint,
+            method,
+            ip_address: ip_address ?? null,
+            user_agent: user_agent ?? null,
+            response_status: response_status ?? null,
+            response_time_ms: response_time_ms ?? null,
+        })
         .select()
         .single();
     if (error) {
@@ -327,4 +367,5 @@ router.post("/:id/usage", async (req, res) => {
     }
     res.status(201).json(data);
 });
+
 export default router;

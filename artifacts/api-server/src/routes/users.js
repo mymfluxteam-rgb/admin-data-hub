@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { getDefaultTesterPlanId, resolveManualUpgradePlan } from "../lib/plans";
 const router = Router();
+router.use(requireAdmin);
 router.get("/", async (_req, res) => {
     const { data, error } = await supabase.from("users").select("*").order("created_at", { ascending: false });
     if (error) {

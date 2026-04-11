@@ -1,24 +1,25 @@
 import { Router } from "express";
 import { randomBytes } from "crypto";
 import { supabase } from "../lib/supabase";
+
 const router = Router();
+
 function generatePublicKey() {
     return `mym_live_${randomBytes(20).toString("hex")}`;
 }
+
 function generateAppSecret() {
     return `mym_secret_${randomBytes(32).toString("hex")}`;
 }
-// GET /api/user-api-keys — list all keys (optionally filter by user_id)
+
+// GET /api/user-api-keys — list keys belonging to the authenticated user
 router.get("/", async (req, res) => {
-    const userId = req.query["user_id"];
-    let query = supabase
+    const userId = req.user.id;
+    const { data, error } = await supabase
         .from("user_api_keys")
         .select("id, user_id, app_name, public_key, is_active, created_at")
+        .eq("user_id", userId)
         .order("created_at", { ascending: false });
-    if (userId) {
-        query = query.eq("user_id", userId);
-    }
-    const { data, error } = await query;
     if (error) {
         if (error.code === "42P01") {
             res.status(503).json({
@@ -32,15 +33,13 @@ router.get("/", async (req, res) => {
     }
     res.json(data ?? []);
 });
-// POST /api/user-api-keys — generate a new key pair
+
+// POST /api/user-api-keys — generate a new key pair for the authenticated user
 router.post("/", async (req, res) => {
-    const { app_name, user_id } = req.body;
+    const userId = req.user.id;
+    const { app_name } = req.body;
     if (!app_name || app_name.trim().length === 0) {
         res.status(400).json({ message: "app_name is required" });
-        return;
-    }
-    if (!user_id || user_id.trim().length === 0) {
-        res.status(400).json({ message: "user_id (Account Owner ID) is required" });
         return;
     }
     const public_key = generatePublicKey();
@@ -48,12 +47,12 @@ router.post("/", async (req, res) => {
     const { data, error } = await supabase
         .from("user_api_keys")
         .insert({
-        user_id: user_id.trim(),
-        app_name: app_name.trim(),
-        public_key,
-        app_secret,
-        is_active: true,
-    })
+            user_id: userId,
+            app_name: app_name.trim(),
+            public_key,
+            app_secret,
+            is_active: true,
+        })
         .select("id, user_id, app_name, public_key, app_secret, is_active, created_at")
         .single();
     if (error) {
@@ -69,18 +68,22 @@ router.post("/", async (req, res) => {
     }
     await supabase.from("audit_logs").insert({
         action: "user_api_key.create",
-        actor: user_id,
+        actor: req.user.email,
         target: data["id"],
         details: `Generated API key for app "${app_name}"`,
-    }).then(() => { });
+        user_id: userId,
+    }).then(() => {});
     res.status(201).json(data);
 });
-// POST /api/user-api-keys/:id/revoke — revoke a key
+
+// POST /api/user-api-keys/:id/revoke — revoke a key (must belong to the authenticated user)
 router.post("/:id/revoke", async (req, res) => {
+    const userId = req.user.id;
     const { data: existing, error: fetchErr } = await supabase
         .from("user_api_keys")
         .select("id, app_name, user_id, is_active")
         .eq("id", req.params["id"])
+        .eq("user_id", userId)
         .single();
     if (fetchErr || !existing) {
         res.status(404).json({ message: "API key not found" });
@@ -94,6 +97,7 @@ router.post("/:id/revoke", async (req, res) => {
         .from("user_api_keys")
         .update({ is_active: false })
         .eq("id", req.params["id"])
+        .eq("user_id", userId)
         .select("id, user_id, app_name, public_key, is_active, created_at")
         .single();
     if (error) {
@@ -102,18 +106,22 @@ router.post("/:id/revoke", async (req, res) => {
     }
     await supabase.from("audit_logs").insert({
         action: "user_api_key.revoke",
-        actor: "admin",
+        actor: req.user.email,
         target: req.params["id"],
         details: `Revoked API key for app "${existing["app_name"]}"`,
-    }).then(() => { });
+        user_id: userId,
+    }).then(() => {});
     res.json(data);
 });
-// DELETE /api/user-api-keys/:id — permanently delete a key
+
+// DELETE /api/user-api-keys/:id — permanently delete a key (must belong to the authenticated user)
 router.delete("/:id", async (req, res) => {
+    const userId = req.user.id;
     const { data: existing, error: fetchErr } = await supabase
         .from("user_api_keys")
         .select("id, app_name")
         .eq("id", req.params["id"])
+        .eq("user_id", userId)
         .single();
     if (fetchErr || !existing) {
         res.status(404).json({ message: "API key not found" });
@@ -122,17 +130,20 @@ router.delete("/:id", async (req, res) => {
     const { error } = await supabase
         .from("user_api_keys")
         .delete()
-        .eq("id", req.params["id"]);
+        .eq("id", req.params["id"])
+        .eq("user_id", userId);
     if (error) {
         res.status(500).json({ message: error.message });
         return;
     }
     await supabase.from("audit_logs").insert({
         action: "user_api_key.delete",
-        actor: "admin",
+        actor: req.user.email,
         target: req.params["id"],
         details: `Deleted API key for app "${existing["app_name"]}"`,
-    }).then(() => { });
+        user_id: userId,
+    }).then(() => {});
     res.status(204).send();
 });
+
 export default router;

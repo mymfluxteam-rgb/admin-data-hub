@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { supabase } from "../lib/supabase";
+import { requireAdmin } from "../middlewares/requireAdmin";
 const router = Router();
+router.use(requireAdmin);
 const ADMIN_ROLES = ["super_admin", "settings_admin", "user_admin", "api_admin", "finance_admin", "viewer", "admin"];
 // GET /api/admin-users — list all admin/staff users
 router.get("/", async (_req, res) => {
